@@ -13,7 +13,10 @@ import {
   AishaAgentConfig,
   WhatsAppConfig,
   KnowledgeBaseItem,
-  WhatsAppMessage
+  WhatsAppMessage,
+  Facility,
+  FacilityStatus,
+  PendingRegistration
 } from '@/types';
 import { 
   mockUsers, 
@@ -25,7 +28,9 @@ import {
   initialAishaConfig,
   initialWhatsAppConfig,
   initialKnowledgeBase,
-  initialWhatsAppMessages
+  initialWhatsAppMessages,
+  initialFacilities,
+  initialPendingRegistrations
 } from '@/lib/mockData';
 
 interface AppContextType {
@@ -55,6 +60,17 @@ interface AppContextType {
   simulateAishaCallResponse: (userSpeech: string) => Promise<string>;
   testWhatsAppConnection: () => Promise<boolean>;
 
+  // Facilities & Campus Resources
+  facilities: Facility[];
+  updateFacilityStatus: (id: string, status: FacilityStatus, note?: string) => void;
+
+  // User Verification Desk
+  pendingRegistrations: PendingRegistration[];
+  approveRegistration: (id: string) => void;
+  rejectRegistration: (id: string, reason?: string) => void;
+  requestProofRegistration: (id: string, notes?: string) => void;
+  submitSelfRegistration: (data: Omit<PendingRegistration, 'id' | 'status' | 'submittedAt'>) => void;
+
   // Actions
   createTicket: (ticket: Partial<Ticket>, initialComment?: string) => Ticket;
   updateTicketStatus: (ticketId: string, status: Ticket['status']) => void;
@@ -83,6 +99,92 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'cyber-dark' ? 'midnight-blue' : 'cyber-dark');
+  };
+
+  // Facilities and Pending Registrations
+  const [facilities, setFacilities] = useState<Facility[]>(initialFacilities);
+  const [pendingRegistrations, setPendingRegistrations] = useState<PendingRegistration[]>(initialPendingRegistrations);
+
+  const updateFacilityStatus = (id: string, status: FacilityStatus, note?: string) => {
+    setFacilities(prev => prev.map(f => {
+      if (f.id === id) {
+        return {
+          ...f,
+          status,
+          statusNote: note || f.statusNote
+        };
+      }
+      return f;
+    }));
+
+    const fac = facilities.find(f => f.id === id);
+    setAuditLogs(prev => [{
+      id: `aud-${Date.now()}`,
+      actorName: currentUser.fullName,
+      actorRole: currentUser.role,
+      action: 'FACILITY_STATUS_UPDATED',
+      timestamp: new Date().toISOString(),
+      details: `${fac?.name || 'Facility'} status updated to ${status}. Note: ${note || 'None'}`,
+      ipAddress: '127.0.0.1'
+    }, ...prev]);
+  };
+
+  const approveRegistration = (id: string) => {
+    const reg = pendingRegistrations.find(r => r.id === id);
+    setPendingRegistrations(prev => prev.filter(r => r.id !== id));
+
+    if (reg) {
+      setAuditLogs(prev => [{
+        id: `aud-${Date.now()}`,
+        actorName: currentUser.fullName,
+        actorRole: currentUser.role,
+        action: 'USER_REGISTRATION_APPROVED',
+        timestamp: new Date().toISOString(),
+        details: `Approved verification for ${reg.fullName} (${reg.campusId}, ${reg.email}). Activation token dispatched.`,
+        ipAddress: '127.0.0.1'
+      }, ...prev]);
+    }
+  };
+
+  const rejectRegistration = (id: string, reason?: string) => {
+    const reg = pendingRegistrations.find(r => r.id === id);
+    setPendingRegistrations(prev => prev.map(r => r.id === id ? { ...r, status: 'REJECTED', verificationNotes: reason } : r));
+
+    if (reg) {
+      setAuditLogs(prev => [{
+        id: `aud-${Date.now()}`,
+        actorName: currentUser.fullName,
+        actorRole: currentUser.role,
+        action: 'USER_REGISTRATION_REJECTED',
+        timestamp: new Date().toISOString(),
+        details: `Rejected registration for ${reg.fullName} (${reg.campusId}). Reason: ${reason || 'Ineligible'}`,
+        ipAddress: '127.0.0.1'
+      }, ...prev]);
+    }
+  };
+
+  const requestProofRegistration = (id: string, notes?: string) => {
+    setPendingRegistrations(prev => prev.map(r => r.id === id ? { ...r, status: 'NEEDS_PROOF', verificationNotes: notes || 'Please upload official university ID.' } : r));
+  };
+
+  const submitSelfRegistration = (data: Omit<PendingRegistration, 'id' | 'status' | 'submittedAt'>) => {
+    const newReg: PendingRegistration = {
+      ...data,
+      id: `reg-${Date.now()}`,
+      status: 'PENDING_VERIFICATION',
+      submittedAt: 'Just now',
+    };
+    setPendingRegistrations(prev => [newReg, ...prev]);
+
+    setAuditLogs(prev => [{
+      id: `aud-${Date.now()}`,
+      actorName: data.fullName,
+      actorRole: data.role,
+      action: 'SELF_REGISTRATION_SUBMITTED',
+      timestamp: new Date().toISOString(),
+      details: `Inbound self-registration received for ${data.fullName} (${data.campusId}). Placed in Admin Verification Desk.`,
+      ipAddress: '127.0.0.1'
+    }, ...prev]);
   };
 
   // Aisha & WhatsApp Configurations
@@ -645,6 +747,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         auditLogs,
         theme,
         toggleTheme,
+        facilities,
+        updateFacilityStatus,
+        pendingRegistrations,
+        approveRegistration,
+        rejectRegistration,
+        requestProofRegistration,
+        submitSelfRegistration,
         aishaConfig,
         updateAishaConfig,
         whatsAppConfig,

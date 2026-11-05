@@ -10,6 +10,9 @@ import { CreateTicketModal } from '@/components/CreateTicketModal';
 import { AuditAndGovernanceView } from '@/components/AuditAndGovernanceView';
 import { AdminPanel } from '@/components/AdminPanel';
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
+import { PublicFacilitiesShowcase } from '@/components/PublicFacilitiesShowcase';
+import { SelfRegistrationModal } from '@/components/SelfRegistrationModal';
+import { Facility } from '@/types';
 import { 
   PlusCircle, 
   PhoneCall, 
@@ -21,7 +24,9 @@ import {
   Sparkles,
   Settings,
   Bot,
-  BarChart3
+  BarChart3,
+  Building2,
+  UserPlus
 } from 'lucide-react';
 
 export default function Home() {
@@ -33,10 +38,11 @@ export default function Home() {
 }
 
 function MainDashboardApp() {
-  const { theme, tickets } = useApp();
+  const { theme, tickets, facilities } = useApp();
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>('tkt-101');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'CONSOLE' | 'STUDIO' | 'GOVERNANCE' | 'ARCHITECTURE' | 'ADMIN'>('DASHBOARD');
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'FACILITIES' | 'DASHBOARD' | 'CONSOLE' | 'STUDIO' | 'GOVERNANCE' | 'ARCHITECTURE' | 'ADMIN'>('FACILITIES');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
   // Handle navigation from dashboard cards to incident console
@@ -45,6 +51,10 @@ function MainDashboardApp() {
       setStatusFilter(filterStatus);
     }
     setActiveTab('CONSOLE');
+  };
+
+  const handleReportFacility = (facility: Facility) => {
+    setIsCreateModalOpen(true);
   };
 
   // Theme-dependent styles
@@ -69,6 +79,21 @@ function MainDashboardApp() {
           {/* View Switcher Tabs */}
           <div className="flex items-center space-x-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800 text-xs font-medium overflow-x-auto shadow-inner">
             
+            {/* TAB 0: PUBLIC FACILITIES SHOWCASE */}
+            <button
+              onClick={() => setActiveTab('FACILITIES')}
+              className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition ${
+                activeTab === 'FACILITIES'
+                  ? 'bg-indigo-600 text-white shadow-md font-semibold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+              }`}
+            >
+              <Building2 className="h-3.5 w-3.5 text-indigo-300" /> Public Facilities
+              <span className="text-[10px] bg-slate-800/90 text-slate-300 border border-slate-700/50 px-1.5 py-0.2 rounded-full font-mono">
+                {facilities.length}
+              </span>
+            </button>
+
             {/* TAB 1: EXECUTIVE DASHBOARD */}
             <button
               onClick={() => setActiveTab('DASHBOARD')}
@@ -150,19 +175,35 @@ function MainDashboardApp() {
             </button>
           </div>
 
-          {/* Action Button */}
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-lg shadow-indigo-600/30 transition"
-          >
-            <PlusCircle className="h-4 w-4" /> New Ticket / Request
-          </button>
+          {/* Action Buttons */}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setIsRegisterModalOpen(true)}
+              className="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 hover:border-slate-600 text-xs font-semibold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition"
+            >
+              <UserPlus className="h-4 w-4 text-indigo-400" /> Self-Register
+            </button>
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-lg shadow-indigo-600/30 transition"
+            >
+              <PlusCircle className="h-4 w-4" /> New Ticket
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
         
+        {/* VIEW 0: PUBLIC FACILITIES SHOWCASE */}
+        {activeTab === 'FACILITIES' && (
+          <PublicFacilitiesShowcase
+            onReportFacilityIssue={handleReportFacility}
+            onOpenRegisterModal={() => setIsRegisterModalOpen(true)}
+          />
+        )}
+
         {/* VIEW 1: EXECUTIVE COMMAND DASHBOARD */}
         {activeTab === 'DASHBOARD' && (
           <AnalyticsDashboard onNavigateToTickets={handleNavigateToTickets} />
@@ -288,6 +329,12 @@ function MainDashboardApp() {
       <CreateTicketModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
+      />
+
+      {/* Self Registration Modal */}
+      <SelfRegistrationModal
+        isOpen={isRegisterModalOpen}
+        onClose={() => setIsRegisterModalOpen(false)}
       />
 
     </div>

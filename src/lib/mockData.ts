@@ -545,3 +545,145 @@ export const initialWhatsAppMessages = [
     autoResolved: true,
   },
 ];
+
+// -------------------------------------------------------------
+// Facilities Catalog & User Verification Desk Defaults
+// -------------------------------------------------------------
+
+import { Facility, PendingRegistration } from '@/types';
+
+export const initialFacilities: Facility[] = [
+  {
+    id: 'fac-1',
+    code: 'LAB-TUR-304',
+    name: 'Turing Advanced AI & Graphics Computing Lab',
+    type: 'COMPUTER_LAB',
+    building: 'Turing Science Center',
+    roomNumber: 'Room 304',
+    capacitySeats: 45,
+    specs: {
+      workstations: '45x Custom Workstations (Intel i9-14900K, 64GB DDR5)',
+      gpus: 'Dual NVIDIA GeForce RTX 4080 (16GB GDDR6X) CUDA Dev',
+      network: '10 Gbps SFP+ Fiber Uplink to Campus Backbone',
+      os: 'Ubuntu 24.04 LTS & Windows 11 Enterprise (Dual Boot)',
+      features: ['PyTorch & TensorFlow Pre-installed', '4K BenQ Color-Accurate Displays', 'Smart Card Access']
+    },
+    status: 'OPERATIONAL',
+    operatingHours: 'Mon - Sun: 08:00 - 23:00 (Badge Access)',
+    statusNote: 'All 45 workstations online and reporting clean diagnostics.'
+  },
+  {
+    id: 'fac-2',
+    code: 'LAB-LOV-102',
+    name: 'Ada Lovelace General Computing & Engineering Lab',
+    type: 'COMPUTER_LAB',
+    building: 'Lovelace Engineering Hall',
+    roomNumber: 'Room 102',
+    capacitySeats: 60,
+    specs: {
+      workstations: '60x Dell Precision 3660 Workstations',
+      network: '1 Gbps Dedicated Ethernet to each desk',
+      os: 'Windows 11 Enterprise',
+      features: ['AutoDesk CAD Suite', 'MATLAB 2026b', 'Visual Studio Enterprise']
+    },
+    status: 'OPERATIONAL',
+    operatingHours: '24/7 Continuous Student Access with Active Student ID',
+    statusNote: 'Nominal operational status.'
+  },
+  {
+    id: 'fac-3',
+    code: 'WIFI-SCI-HALL',
+    name: 'Science Hall Core Eduroam & High-Density Wi-Fi Zone',
+    type: 'WIFI_ZONE',
+    building: 'Science Hall (Floors 1 - 4)',
+    roomNumber: 'Campus Grid AP-Cluster',
+    specs: {
+      network: '12x Cisco Catalyst 9130AX Wi-Fi 6E Access Points',
+      features: ['WPA3 Enterprise 802.1X', 'Dynamic VLAN Steering', 'Eduroam Global Roaming']
+    },
+    status: 'DEGRADED',
+    operatingHours: '24/7 Campus Grid',
+    statusNote: 'Intermittent 5GHz channel loss on 2nd floor west wing. Active repair ticket IT-2026-004921.'
+  },
+  {
+    id: 'fac-4',
+    code: 'PRN-LIB-LOBBY',
+    name: 'Main Library 2nd Floor Cloud Print & Scan Station',
+    type: 'PRINT_KIOSK',
+    building: 'University Memorial Library',
+    roomNumber: '2nd Floor Commons',
+    specs: {
+      printerType: '3x Konica Minolta bizhub C450i Multifunction Units',
+      features: ['AirPrint / Cloud Web Print', 'Duplex Color & Ledger Size', 'Contactless Student Card Swipe']
+    },
+    status: 'OPERATIONAL',
+    operatingHours: 'Mon - Fri: 08:00 - 00:00, Sat - Sun: 10:00 - 22:00',
+    statusNote: 'All toner levels > 85%. Paper trays refilled today.'
+  },
+  {
+    id: 'fac-5',
+    code: 'AUD-HALL-A',
+    name: 'Auditorium Hall A Multimedia AV & Laser Projection',
+    type: 'AUDITORIUM_AV',
+    building: 'Academic Conference Center',
+    roomNumber: 'Auditorium Hall A',
+    capacitySeats: 350,
+    specs: {
+      features: ['Christie 4K 13,000-Lumen Laser Projector', 'Shure Dante 8-Channel Wireless Mic System', 'Pan-Tilt-Zoom Lecture Capture Camera', 'Crestron Touch Controller']
+    },
+    status: 'OPERATIONAL',
+    operatingHours: 'Mon - Fri: 08:00 - 20:00 (Reservation Required)',
+    statusNote: 'Checked and calibrated for upcoming lectures.'
+  },
+  {
+    id: 'fac-6',
+    code: 'SFT-REPO-CLOUD',
+    name: 'Campus Institutional Software Repository & License Pool',
+    type: 'SOFTWARE_REPO',
+    building: 'DATAPOINT Cloud Hub',
+    roomNumber: 'Virtual Portal',
+    specs: {
+      features: ['MATLAB Campus-Wide License', 'Adobe Creative Cloud for Higher Ed', 'JetBrains Academic Suite', 'Microsoft 365 Apps for Enterprise']
+    },
+    status: 'SCHEDULED_MAINTENANCE',
+    operatingHours: '24/7 Self-Service Web Download',
+    statusNote: 'Annual volume license server renewal underway on administrative VM cluster.'
+  }
+];
+
+export const initialPendingRegistrations: PendingRegistration[] = [
+  {
+    id: 'reg-101',
+    fullName: 'Zainab Abbas',
+    campusId: 'STU-2026-4412',
+    email: 'zabbas@student.campus.edu',
+    departmentName: 'Computer Science & AI',
+    role: 'STUDENT',
+    phoneNumber: '+1 (415) 555-8821',
+    status: 'PENDING_VERIFICATION',
+    submittedAt: 'Today at 02:15 PM',
+  },
+  {
+    id: 'reg-102',
+    fullName: 'Dr. Farhan Qureshi',
+    campusId: 'FAC-2026-1044',
+    email: 'fqureshi@faculty.campus.edu',
+    departmentName: 'Electrical & Computer Engineering',
+    role: 'FACULTY',
+    phoneNumber: '+1 (415) 555-9932',
+    status: 'PENDING_VERIFICATION',
+    submittedAt: 'Today at 11:30 AM',
+  },
+  {
+    id: 'reg-103',
+    fullName: 'Kareem Sterling',
+    campusId: 'STU-2026-5591',
+    email: 'ksterling@student.campus.edu',
+    departmentName: 'Mechanical Engineering',
+    role: 'STUDENT',
+    phoneNumber: '+1 (415) 555-3310',
+    status: 'NEEDS_PROOF',
+    submittedAt: 'Yesterday at 04:45 PM',
+    verificationNotes: 'Please upload front photograph of current university semester card.'
+  }
+];

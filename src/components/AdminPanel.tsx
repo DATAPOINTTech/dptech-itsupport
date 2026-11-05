@@ -24,7 +24,13 @@ import {
   Terminal,
   Activity,
   Copy,
-  Check
+  Check,
+  UserCheck,
+  UserX,
+  FileQuestion,
+  Users,
+  Wrench,
+  GraduationCap
 } from 'lucide-react';
 import { AishaAgentConfig, WhatsAppConfig, KnowledgeBaseItem } from '@/types';
 
@@ -38,10 +44,22 @@ export function AdminPanel() {
     addKnowledgeItem, 
     toggleKnowledgeItem, 
     deleteKnowledgeItem,
-    testWhatsAppConnection 
+    testWhatsAppConnection,
+    pendingRegistrations,
+    approveRegistration,
+    rejectRegistration,
+    requestProofRegistration,
+    departments
   } = useApp();
 
-  const [activeSubTab, setActiveSubTab] = useState<'AISHA' | 'WHATSAPP' | 'KNOWLEDGE' | 'ESCALATION'>('AISHA');
+  const [activeSubTab, setActiveSubTab] = useState<'VERIFICATION' | 'PROVISIONING' | 'AISHA' | 'WHATSAPP' | 'KNOWLEDGE' | 'ESCALATION'>('VERIFICATION');
+  
+  // Technician provisioning form state
+  const [techName, setTechName] = useState('');
+  const [techEmail, setTechEmail] = useState('');
+  const [techDept, setTechDept] = useState(departments[0]?.id || '');
+  const [techTier, setTechTier] = useState<'TECHNICIAN_T1' | 'TECHNICIAN_T2' | 'TECHNICIAN_T3'>('TECHNICIAN_T1');
+  const [techSkills, setTechSkills] = useState('Cisco Switches, Aruba Wi-Fi 6E, RADIUS/PEAP');
   
   // Local form state for Aisha
   const [localAisha, setLocalAisha] = useState<AishaAgentConfig>(aishaConfig);
@@ -185,8 +203,33 @@ export function AdminPanel() {
         {/* Sub-Tabs Navigation */}
         <div className="flex items-center space-x-2 mt-6 pt-5 border-t border-slate-800/80 overflow-x-auto text-xs font-medium">
           <button
+            onClick={() => setActiveSubTab('VERIFICATION')}
+            className={`px-3.5 py-2 rounded-lg flex items-center gap-2 transition shrink-0 ${
+              activeSubTab === 'VERIFICATION'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            }`}
+          >
+            <UserCheck className="h-4 w-4" /> User Verification Desk
+            {pendingRegistrations.filter(r => r.status === 'PENDING_VERIFICATION').length > 0 && (
+              <span className="text-[10px] bg-amber-400 text-slate-950 font-bold px-1.5 py-0.2 rounded-full">
+                {pendingRegistrations.filter(r => r.status === 'PENDING_VERIFICATION').length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveSubTab('PROVISIONING')}
+            className={`px-3.5 py-2 rounded-lg flex items-center gap-2 transition shrink-0 ${
+              activeSubTab === 'PROVISIONING'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            }`}
+          >
+            <Users className="h-4 w-4" /> Staff Provisioning Hub
+          </button>
+          <button
             onClick={() => setActiveSubTab('AISHA')}
-            className={`px-3.5 py-2 rounded-lg flex items-center gap-2 transition ${
+            className={`px-3.5 py-2 rounded-lg flex items-center gap-2 transition shrink-0 ${
               activeSubTab === 'AISHA'
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
@@ -196,7 +239,7 @@ export function AdminPanel() {
           </button>
           <button
             onClick={() => setActiveSubTab('WHATSAPP')}
-            className={`px-3.5 py-2 rounded-lg flex items-center gap-2 transition ${
+            className={`px-3.5 py-2 rounded-lg flex items-center gap-2 transition shrink-0 ${
               activeSubTab === 'WHATSAPP'
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
@@ -206,17 +249,17 @@ export function AdminPanel() {
           </button>
           <button
             onClick={() => setActiveSubTab('KNOWLEDGE')}
-            className={`px-3.5 py-2 rounded-lg flex items-center gap-2 transition ${
+            className={`px-3.5 py-2 rounded-lg flex items-center gap-2 transition shrink-0 ${
               activeSubTab === 'KNOWLEDGE'
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
             }`}
           >
-            <BookOpen className="h-4 w-4" /> Knowledge Base &amp; Resolution Rules ({knowledgeBase.length})
+            <BookOpen className="h-4 w-4" /> Knowledge Base &amp; Rules ({knowledgeBase.length})
           </button>
           <button
             onClick={() => setActiveSubTab('ESCALATION')}
-            className={`px-3.5 py-2 rounded-lg flex items-center gap-2 transition ${
+            className={`px-3.5 py-2 rounded-lg flex items-center gap-2 transition shrink-0 ${
               activeSubTab === 'ESCALATION'
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
@@ -232,6 +275,213 @@ export function AdminPanel() {
         <div className="fixed bottom-6 right-6 z-50 bg-emerald-600 text-white px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 text-xs font-semibold animate-in fade-in slide-in-from-bottom-2">
           <CheckCircle2 className="h-4 w-4" />
           Settings saved and synchronized with DATAPOINT Cloud!
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* SUB-TAB: USER VERIFICATION DESK */}
+      {/* ============================================================== */}
+      {activeSubTab === 'VERIFICATION' && (
+        <div className="space-y-6">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <UserCheck className="h-4 w-4 text-emerald-400" />
+                  Institutional User Verification Desk
+                </h3>
+                <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-bold">
+                  {pendingRegistrations.length} in queue
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-1">
+                Review and approve inbound student, professor, and staff registrations against campus registrar records before granting ticket creation access.
+              </p>
+            </div>
+          </div>
+
+          {pendingRegistrations.length === 0 ? (
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 text-center space-y-2">
+              <CheckCircle2 className="h-10 w-10 text-emerald-400 mx-auto" />
+              <h4 className="text-sm font-semibold text-white">All Registration Requests Cleared</h4>
+              <p className="text-xs text-slate-400">There are no pending accounts awaiting review in the verification desk.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pendingRegistrations.map((reg) => (
+                <div 
+                  key={reg.id}
+                  className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-4 transition flex flex-col md:flex-row md:items-center justify-between gap-4"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-sm font-bold text-white">{reg.fullName}</h4>
+                      <span className="text-[10px] font-mono font-bold bg-indigo-900/60 text-indigo-300 border border-indigo-700/50 px-2 py-0.5 rounded">
+                        {reg.campusId}
+                      </span>
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                        reg.role === 'FACULTY' 
+                          ? 'bg-purple-900/60 text-purple-300 border border-purple-700/50' 
+                          : 'bg-blue-900/60 text-blue-300 border border-blue-700/50'
+                      }`}>
+                        {reg.role}
+                      </span>
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                        reg.status === 'NEEDS_PROOF' 
+                          ? 'bg-amber-950 text-amber-300 border border-amber-500/40' 
+                          : 'bg-slate-800 text-slate-400'
+                      }`}>
+                        {reg.status}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+                      <span>Email: <strong className="text-slate-300 font-mono">{reg.email}</strong></span>
+                      <span>Dept: <strong className="text-slate-300">{reg.departmentName}</strong></span>
+                      <span>Phone: <strong className="text-slate-300 font-mono">{reg.phoneNumber}</strong></span>
+                      <span>Submitted: <strong className="text-slate-400">{reg.submittedAt}</strong></span>
+                    </div>
+
+                    {reg.verificationNotes && (
+                      <p className="text-[11px] text-amber-300 bg-amber-950/40 border border-amber-600/30 p-2 rounded-lg mt-1">
+                        <strong>Admin Note:</strong> {reg.verificationNotes}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => approveRegistration(reg.id)}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow transition"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Approve &amp; Activate
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => requestProofRegistration(reg.id, 'Please upload official university photo ID.')}
+                      className="bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition"
+                    >
+                      <FileQuestion className="h-3.5 w-3.5" /> Request Proof
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => rejectRegistration(reg.id, 'Identity records not found in registrar database.')}
+                      className="bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition"
+                    >
+                      <UserX className="h-3.5 w-3.5" /> Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* SUB-TAB: STAFF PROVISIONING HUB */}
+      {/* ============================================================== */}
+      {activeSubTab === 'PROVISIONING' && (
+        <div className="space-y-6">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                <Users className="h-4 w-4 text-indigo-400" />
+                Support Staff &amp; Technician Provisioning Hub
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Technicians cannot self-register. Accounts are created and provisioned exclusively here with departmental functional scopes and tier levels.
+              </p>
+            </div>
+          </div>
+
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              showSavedToastNotification();
+              setTechName('');
+              setTechEmail('');
+            }}
+            className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 shadow-xl"
+          >
+            <h4 className="text-xs font-bold text-indigo-300 uppercase tracking-wide">
+              Provision New Engineering / Support Staff Account
+            </h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Staff Full Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Liam Foster"
+                  value={techName}
+                  onChange={e => setTechName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Institutional Email</label>
+                <input
+                  type="email"
+                  placeholder="e.g. lfoster@it.campus.edu"
+                  value={techEmail}
+                  onChange={e => setTechEmail(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Departmental Scope</label>
+                <select
+                  value={techDept}
+                  onChange={e => setTechDept(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white"
+                >
+                  {departments.map(d => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Tier &amp; Privilege Level</label>
+                <select
+                  value={techTier}
+                  onChange={e => setTechTier(e.target.value as any)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white"
+                >
+                  <option value="TECHNICIAN_T1">Tier-1 Frontline Dispatch &amp; Hardware</option>
+                  <option value="TECHNICIAN_T2">Tier-2 Specialized Network / Security Engineer</option>
+                  <option value="TECHNICIAN_T3">Tier-3 Infrastructure Architect &amp; Escalation</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">Specialized Skills &amp; Certifications</label>
+              <input
+                type="text"
+                value={techSkills}
+                onChange={e => setTechSkills(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white"
+              />
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="submit"
+                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow"
+              >
+                <Plus className="h-4 w-4" /> Provision Technician Credentials
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

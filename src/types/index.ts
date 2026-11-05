@@ -39,6 +39,12 @@ export interface Department {
   defaultSlaMinutes: number;
 }
 
+export type VerificationStatus = 
+  | 'PENDING_VERIFICATION' 
+  | 'APPROVED' 
+  | 'REJECTED' 
+  | 'NEEDS_PROOF';
+
 export interface User {
   id: string;
   campusId: string;
@@ -49,6 +55,56 @@ export interface User {
   departmentId?: string;
   isPhoneVerified: boolean;
   avatarUrl?: string;
+  verificationStatus?: VerificationStatus;
+  verificationNotes?: string;
+}
+
+export type FacilityType = 
+  | 'COMPUTER_LAB' 
+  | 'WIFI_ZONE' 
+  | 'PRINT_KIOSK' 
+  | 'AUDITORIUM_AV' 
+  | 'SOFTWARE_REPO';
+
+export type FacilityStatus = 
+  | 'OPERATIONAL' 
+  | 'DEGRADED' 
+  | 'SCHEDULED_MAINTENANCE' 
+  | 'OFFLINE';
+
+export interface Facility {
+  id: string;
+  code: string;
+  name: string;
+  type: FacilityType;
+  building: string;
+  roomNumber: string;
+  capacitySeats?: number;
+  specs: {
+    workstations?: string;
+    gpus?: string;
+    network?: string;
+    os?: string;
+    printerType?: string;
+    features?: string[];
+  };
+  status: FacilityStatus;
+  operatingHours: string;
+  statusNote?: string;
+}
+
+export interface PendingRegistration {
+  id: string;
+  fullName: string;
+  campusId: string;
+  email: string;
+  departmentName: string;
+  role: 'STUDENT' | 'FACULTY' | 'STAFF';
+  phoneNumber: string;
+  status: VerificationStatus;
+  submittedAt: string;
+  proofDocumentUrl?: string;
+  verificationNotes?: string;
 }
 
 export interface TicketComment {
