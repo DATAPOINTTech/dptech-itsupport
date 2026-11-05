@@ -56,7 +56,7 @@ export interface TicketComment {
   ticketId: string;
   authorId: string;
   authorName: string;
-  authorRole: UserRole;
+  authorRole: UserRole | 'AI_AGENT';
   isInternalNote: boolean;
   channelOrigin: TicketChannel;
   content: string;
@@ -69,9 +69,10 @@ export interface CallParticipant {
   userId?: string;
   name: string;
   phoneNumber: string;
-  role: 'CALLER' | 'TIER1_AGENT' | 'SPECIALIST' | 'VENDOR_ENGINEER' | 'LAB_MANAGER';
+  role: 'CALLER' | 'TIER1_AGENT' | 'SPECIALIST' | 'VENDOR_ENGINEER' | 'LAB_MANAGER' | 'AI_AGENT';
   joinedAt: string;
   status: 'CONNECTED' | 'MUTED' | 'DISCONNECTED';
+  isAiAgent?: boolean;
 }
 
 export interface CallSession {
@@ -88,6 +89,7 @@ export interface CallSession {
   transcriptText?: string;
   summary?: string;
   participants: CallParticipant[];
+  handledByAisha?: boolean;
 }
 
 export interface AuditLog {
@@ -124,4 +126,59 @@ export interface Ticket {
   updatedAt: string;
   commentsCount: number;
   hasCallSession?: boolean;
+}
+
+// -------------------------------------------------------------
+// Aisha AI & WhatsApp Setup Configuration Types
+// -------------------------------------------------------------
+
+export interface AishaAgentConfig {
+  name: string;
+  title: string;
+  voice: 'en-US-Neural2-F' | 'ur-PK-Standard-A' | 'en-GB-Wavenet-A' | 'en-AU-Neural2-C';
+  language: 'English' | 'Urdu' | 'Multilingual';
+  tone: 'EMPATHETIC' | 'PROFESSIONAL' | 'TECHNICAL';
+  model: 'gemini-1.5-pro' | 'gpt-4o' | 'dptech-fine-tuned-llama3' | 'claude-3-5-sonnet';
+  temperature: number;
+  maxTokens: number;
+  systemPrompt: string;
+  autoAnswerCalls: boolean;
+  autoReplyMessages: boolean;
+  autoCreateTickets: boolean;
+  humanHandoffKeywords: string[];
+  confidenceThreshold: number;
+}
+
+export interface WhatsAppConfig {
+  phoneNumberId: string;
+  wabaId: string;
+  appId: string;
+  bearerToken: string;
+  verifyToken: string;
+  webhookUrl: string;
+  businessDisplayName: string;
+  status: 'CONNECTED' | 'DISCONNECTED' | 'TESTING';
+  lastPingAt?: string;
+}
+
+export interface KnowledgeBaseItem {
+  id: string;
+  topic: string;
+  category: 'NETWORK' | 'ACCOUNT' | 'HARDWARE' | 'LMS';
+  triggerKeywords: string[];
+  resolutionSnippet: string;
+  active: boolean;
+}
+
+export interface WhatsAppMessage {
+  id: string;
+  sender: 'USER' | 'AISHA' | 'TECH';
+  senderName: string;
+  senderPhone?: string;
+  content: string;
+  timestamp: string;
+  status: 'SENT' | 'DELIVERED' | 'READ';
+  sentiment?: 'POSITIVE' | 'NEUTRAL' | 'FRUSTRATED';
+  linkedTicketRef?: string;
+  autoResolved?: boolean;
 }

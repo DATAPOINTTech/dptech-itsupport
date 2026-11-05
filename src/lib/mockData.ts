@@ -281,3 +281,120 @@ export const initialAuditLogs: AuditLog[] = [
     ipAddress: '192.168.10.85'
   }
 ];
+
+// -------------------------------------------------------------
+// Aisha AI Support Agent & WhatsApp Setup Defaults
+// -------------------------------------------------------------
+
+export const initialAishaConfig = {
+  name: 'Aisha',
+  title: 'DATAPOINT Senior AI Support Specialist',
+  voice: 'en-US-Neural2-F' as const,
+  language: 'English' as const,
+  tone: 'EMPATHETIC' as const,
+  model: 'gemini-1.5-pro' as const,
+  temperature: 0.3,
+  maxTokens: 1024,
+  systemPrompt: `You are Aisha, the premier AI IT Support Specialist powered by DATAPOINT Technologies for campus students, faculty, and administrative staff.
+Your mission is to swiftly diagnose issues, provide clear step-by-step technical guidance, auto-resolve common queries (Wi-Fi, Canvas LMS, password resets, lab printing), and gracefully escalate complex or high-risk security tickets to human technicians.
+Always be polite, reassuring, concise, and structured. Identify the user's campus ID whenever possible.`,
+  autoAnswerCalls: true,
+  autoReplyMessages: true,
+  autoCreateTickets: true,
+  humanHandoffKeywords: ['human', 'agent', 'representative', 'operator', 'talk to person', 'escalate', 'manager'],
+  confidenceThreshold: 85,
+};
+
+export const initialWhatsAppConfig = {
+  phoneNumberId: '108849201948123',
+  wabaId: '394820192839182',
+  appId: '882049182940129',
+  bearerToken: 'EAAG9...DPTECH_PROD_META_ACCESS_KEY',
+  verifyToken: 'CAMPUS_IT_SECRET_2026',
+  webhookUrl: 'https://dptech-support-system.vercel.app/api/whatsapp-webhook',
+  businessDisplayName: 'DATAPOINT Technologies Campus Support',
+  status: 'CONNECTED' as const,
+  lastPingAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+};
+
+export const initialKnowledgeBase = [
+  {
+    id: 'kb-1',
+    topic: 'Campus Wi-Fi (Eduroam & Student-Secure)',
+    category: 'NETWORK' as const,
+    triggerKeywords: ['wifi', 'wi-fi', 'internet', 'disconnect', 'eduroam', 'signal', 'slow'],
+    resolutionSnippet: `1. Forget the network "Campus-Student".\n2. Reconnect and select EAP method: PEAP, Phase 2 authentication: MSCHAPv2.\n3. Enter your campus username (e.g. smartinez@student.campus.edu) and current AD password.\n4. If certificate prompt appears, accept "radius.campus.edu".`,
+    active: true,
+  },
+  {
+    id: 'kb-2',
+    topic: 'Canvas LMS & Exam Portal Login',
+    category: 'LMS' as const,
+    triggerKeywords: ['canvas', 'exam', 'quiz', 'lockdown', 'lms', 'submit', 'assignment'],
+    resolutionSnippet: `1. Ensure browser cookies and third-party trackers are enabled for canvas.campus.edu.\n2. If using Respondus LockDown Browser, update to v2.1.2.06 or reboot your machine.\n3. Clear cache via Ctrl+Shift+Delete (Chrome/Edge).`,
+    active: true,
+  },
+  {
+    id: 'kb-3',
+    topic: 'Self-Service Password & MFA Reset',
+    category: 'ACCOUNT' as const,
+    triggerKeywords: ['password', 'reset', 'locked', 'mfa', 'authenticator', '2fa', 'otp'],
+    resolutionSnippet: `Visit https://identity.campus.edu/self-service. Authenticate via backup SMS or Microsoft Authenticator number matching. If phone was lost, security policy requires an in-person or live video challenge with IT Admin.`,
+    active: true,
+  },
+  {
+    id: 'kb-4',
+    topic: 'Engineering & Library Cloud Printing',
+    category: 'HARDWARE' as const,
+    triggerKeywords: ['printer', 'printing', 'paper', 'jam', 'quota', 'print job'],
+    resolutionSnippet: `Upload your PDF to https://print.campus.edu. Swipe your campus card at any Konica Minolta release station within 24 hours. Quota refreshes on the 1st of every month.`,
+    active: true,
+  },
+];
+
+export const initialWhatsAppMessages = [
+  {
+    id: 'msg-1',
+    sender: 'USER' as const,
+    senderName: 'Sophia Martinez',
+    senderPhone: '+1 (415) 555-2381',
+    content: 'Hi! My laptop will not connect to the campus Wi-Fi in the Engineering library.',
+    timestamp: '10:41 AM',
+    status: 'READ' as const,
+    sentiment: 'NEUTRAL' as const,
+    linkedTicketRef: 'IT-2026-004921',
+  },
+  {
+    id: 'msg-2',
+    sender: 'AISHA' as const,
+    senderName: 'Aisha (DATAPOINT AI)',
+    content: 'Hello Sophia! I am Aisha from DATAPOINT Technologies Support. I can help you reconnect right away!\n\nPlease follow these steps:\n1. Forget "Campus-Student" in Wi-Fi settings.\n2. Reconnect with EAP Method PEAP & MSCHAPv2.\n3. Enter your campus email and domain password.\n\nDid this solve your connection, or would you like me to open a priority ticket for the on-site tech?',
+    timestamp: '10:41 AM',
+    status: 'READ' as const,
+    sentiment: 'POSITIVE' as const,
+    linkedTicketRef: 'IT-2026-004921',
+    autoResolved: false,
+  },
+  {
+    id: 'msg-3',
+    sender: 'USER' as const,
+    senderName: 'Sophia Martinez',
+    senderPhone: '+1 (415) 555-2381',
+    content: 'That worked! Thank you Aisha!',
+    timestamp: '10:43 AM',
+    status: 'READ' as const,
+    sentiment: 'POSITIVE' as const,
+    linkedTicketRef: 'IT-2026-004921',
+  },
+  {
+    id: 'msg-4',
+    sender: 'AISHA' as const,
+    senderName: 'Aisha (DATAPOINT AI)',
+    content: 'You are very welcome, Sophia! Glad to hear you are back online. Have a great semester, and feel free to message DATAPOINT Support anytime! 🚀',
+    timestamp: '10:43 AM',
+    status: 'DELIVERED' as const,
+    sentiment: 'POSITIVE' as const,
+    linkedTicketRef: 'IT-2026-004921',
+    autoResolved: true,
+  },
+];

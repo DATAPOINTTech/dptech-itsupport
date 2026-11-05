@@ -1,8 +1,32 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, Ticket, TicketComment, CallSession, AuditLog, Department, UserRole, TicketPriority } from '@/types';
-import { mockUsers, mockDepartments, initialTickets, initialComments, initialCallSession, initialAuditLogs } from '@/lib/mockData';
+import { 
+  User, 
+  Ticket, 
+  TicketComment, 
+  CallSession, 
+  AuditLog, 
+  Department, 
+  UserRole, 
+  TicketPriority,
+  AishaAgentConfig,
+  WhatsAppConfig,
+  KnowledgeBaseItem,
+  WhatsAppMessage
+} from '@/types';
+import { 
+  mockUsers, 
+  mockDepartments, 
+  initialTickets, 
+  initialComments, 
+  initialCallSession, 
+  initialAuditLogs,
+  initialAishaConfig,
+  initialWhatsAppConfig,
+  initialKnowledgeBase,
+  initialWhatsAppMessages
+} from '@/lib/mockData';
 
 interface AppContextType {
   currentUser: User;
@@ -13,6 +37,20 @@ interface AppContextType {
   activeCall: CallSession | null;
   auditLogs: AuditLog[];
   
+  // Aisha & WhatsApp Setup
+  aishaConfig: AishaAgentConfig;
+  updateAishaConfig: (newConfig: Partial<AishaAgentConfig>) => void;
+  whatsAppConfig: WhatsAppConfig;
+  updateWhatsAppConfig: (newConfig: Partial<WhatsAppConfig>) => void;
+  knowledgeBase: KnowledgeBaseItem[];
+  addKnowledgeItem: (item: Omit<KnowledgeBaseItem, 'id'>) => void;
+  toggleKnowledgeItem: (id: string) => void;
+  deleteKnowledgeItem: (id: string) => void;
+  whatsAppMessages: WhatsAppMessage[];
+  sendWhatsAppMessage: (content: string, senderName?: string) => Promise<void>;
+  simulateAishaCallResponse: (userSpeech: string) => Promise<string>;
+  testWhatsAppConnection: () => Promise<boolean>;
+
   // Actions
   createTicket: (ticket: Partial<Ticket>, initialComment?: string) => Ticket;
   updateTicketStatus: (ticketId: string, status: Ticket['status']) => void;
@@ -38,10 +76,214 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [activeCall, setActiveCall] = useState<CallSession | null>(initialCallSession);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(initialAuditLogs);
 
+  // Aisha & WhatsApp Configurations
+  const [aishaConfig, setAishaConfig] = useState<AishaAgentConfig>(initialAishaConfig);
+  const [whatsAppConfig, setWhatsAppConfig] = useState<WhatsAppConfig>(initialWhatsAppConfig);
+  const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBaseItem[]>(initialKnowledgeBase);
+  const [whatsAppMessages, setWhatsAppMessages] = useState<WhatsAppMessage[]>(initialWhatsAppMessages);
+
+  // Load persisted configs on mount
+  useEffect(() => {
+    try {
+      const savedAisha = localStorage.getItem('dptech_aisha_config');
+      if (savedAisha) setAishaConfig(JSON.parse(savedAisha));
+
+      const savedWA = localStorage.getItem('dptech_whatsapp_config');
+      if (savedWA) setWhatsAppConfig(JSON.parse(savedWA));
+
+      const savedKB = localStorage.getItem('dptech_knowledge_base');
+      if (savedKB) setKnowledgeBase(JSON.parse(savedKB));
+    } catch {
+      // LocalStorage not available or parse error
+    }
+  }, []);
+
+  const updateAishaConfig = (newConfig: Partial<AishaAgentConfig>) => {
+    setAishaConfig(prev => {
+      const updated = { ...prev, ...newConfig };
+      try {
+        localStorage.setItem('dptech_aisha_config', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    setAuditLogs(prev => [{
+      id: `aud-${Date.now()}`,
+      actorName: currentUser.fullName,
+      actorRole: currentUser.role,
+      action: 'AISHA_CONFIG_UPDATED',
+      timestamp: new Date().toISOString(),
+      details: `Aisha agent settings modified (Model: ${newConfig.model || aishaConfig.model}, Tone: ${newConfig.tone || aishaConfig.tone})`,
+      ipAddress: '127.0.0.1'
+    }, ...prev]);
+  };
+
+  const updateWhatsAppConfig = (newConfig: Partial<WhatsAppConfig>) => {
+    setWhatsAppConfig(prev => {
+      const updated = { ...prev, ...newConfig };
+      try {
+        localStorage.setItem('dptech_whatsapp_config', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    setAuditLogs(prev => [{
+      id: `aud-${Date.now()}`,
+      actorName: currentUser.fullName,
+      actorRole: currentUser.role,
+      action: 'WHATSAPP_CONFIG_UPDATED',
+      timestamp: new Date().toISOString(),
+      details: `WhatsApp Business Cloud credentials and webhook parameters updated.`,
+      ipAddress: '127.0.0.1'
+    }, ...prev]);
+  };
+
+  const addKnowledgeItem = (item: Omit<KnowledgeBaseItem, 'id'>) => {
+    const newItem: KnowledgeBaseItem = {
+      ...item,
+      id: `kb-${Date.now()}`,
+    };
+    setKnowledgeBase(prev => {
+      const updated = [newItem, ...prev];
+      try {
+        localStorage.setItem('dptech_knowledge_base', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const toggleKnowledgeItem = (id: string) => {
+    setKnowledgeBase(prev => {
+      const updated = prev.map(item => item.id === id ? { ...item, active: !item.active } : item);
+      try {
+        localStorage.setItem('dptech_knowledge_base', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const deleteKnowledgeItem = (id: string) => {
+    setKnowledgeBase(prev => {
+      const updated = prev.filter(item => item.id !== id);
+      try {
+        localStorage.setItem('dptech_knowledge_base', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const testWhatsAppConnection = async (): Promise<boolean> => {
+    setWhatsAppConfig(prev => ({ ...prev, status: 'TESTING' }));
+    await new Promise(r => setTimeout(r, 1000));
+    const isSuccess = !!whatsAppConfig.phoneNumberId && !!whatsAppConfig.bearerToken;
+    setWhatsAppConfig(prev => ({ 
+      ...prev, 
+      status: isSuccess ? 'CONNECTED' : 'DISCONNECTED',
+      lastPingAt: new Date().toISOString()
+    }));
+    return isSuccess;
+  };
+
   const switchRole = (roleKey: string) => {
     if (mockUsers[roleKey]) {
       setCurrentUser(mockUsers[roleKey]);
     }
+  };
+
+  // Aisha conversational resolution engine for chat & calls
+  const findAishaAnswer = (userPrompt: string): { reply: string; autoResolved: boolean; isEscalation: boolean } => {
+    const lower = userPrompt.toLowerCase();
+
+    // Check handoff keywords first
+    const isEscalation = aishaConfig.humanHandoffKeywords.some(kw => lower.includes(kw.toLowerCase()));
+    if (isEscalation) {
+      return {
+        reply: `I understand this requires human intervention. I have escalated this directly to our on-duty Tier-1 Network & Systems technician with High SLA Priority. A technician will contact you immediately.`,
+        autoResolved: false,
+        isEscalation: true
+      };
+    }
+
+    // Check active knowledge base rules
+    for (const item of knowledgeBase) {
+      if (item.active && item.triggerKeywords.some(kw => lower.includes(kw.toLowerCase()))) {
+        return {
+          reply: `Here is the solution from DATAPOINT Technologies Knowledge Base for "${item.topic}":\n\n${item.resolutionSnippet}\n\nPlease reply if you need further assistance or if you would like me to open a service ticket.`,
+          autoResolved: true,
+          isEscalation: false
+        };
+      }
+    }
+
+    // Fallback AI reasoning
+    return {
+      reply: `Thank you for reaching DATAPOINT Technologies Support. I have logged your request regarding: "${userPrompt}".\n\nI am running preliminary network and account diagnostics on your campus profile. If you need immediate hands-on help, reply "human" to bridge an on-site technician.`,
+      autoResolved: false,
+      isEscalation: false
+    };
+  };
+
+  const sendWhatsAppMessage = async (content: string, senderName = 'Student User') => {
+    const userMsgId = `msg-${Date.now()}`;
+    const userMsg: WhatsAppMessage = {
+      id: userMsgId,
+      sender: 'USER',
+      senderName,
+      content,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      status: 'SENT',
+      sentiment: content.toLowerCase().includes('urgent') || content.toLowerCase().includes('broken') ? 'FRUSTRATED' : 'NEUTRAL',
+    };
+
+    setWhatsAppMessages(prev => [...prev, userMsg]);
+
+    // If Aisha auto-reply is enabled, trigger her reply
+    if (aishaConfig.autoReplyMessages) {
+      setTimeout(() => {
+        const { reply, autoResolved, isEscalation } = findAishaAnswer(content);
+        
+        // Auto-create ticket if needed
+        let refTicketId: string | undefined;
+        if (aishaConfig.autoCreateTickets) {
+          const tkt = createTicket({
+            title: `WhatsApp Inquiry: ${content.substring(0, 45)}...`,
+            description: `Inbound WhatsApp message from ${senderName}: "${content}". Auto-processed by Aisha.`,
+            channel: 'WHATSAPP_CHAT',
+            priority: isEscalation ? 'P2_HIGH' : 'P3_MEDIUM',
+          }, content);
+          refTicketId = tkt.referenceId;
+        }
+
+        const aishaMsg: WhatsAppMessage = {
+          id: `msg-aisha-${Date.now()}`,
+          sender: 'AISHA',
+          senderName: `${aishaConfig.name} (DATAPOINT AI)`,
+          content: refTicketId ? `${reply}\n\n🏷️ Ticket reference: ${refTicketId}` : reply,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          status: 'DELIVERED',
+          sentiment: 'POSITIVE',
+          linkedTicketRef: refTicketId,
+          autoResolved,
+        };
+
+        setWhatsAppMessages(prev => [...prev, aishaMsg]);
+      }, 700);
+    }
+  };
+
+  const simulateAishaCallResponse = async (userSpeech: string): Promise<string> => {
+    const { reply, isEscalation } = findAishaAnswer(userSpeech);
+    if (activeCall) {
+      const updatedTranscript = `${activeCall.transcriptText || ''}\n[Caller]: ${userSpeech}\n[${aishaConfig.name} (AI)]: ${reply}`;
+      setActiveCall({
+        ...activeCall,
+        transcriptText: updatedTranscript,
+        summary: isEscalation 
+          ? `${activeCall.summary} | Escalated by ${aishaConfig.name} upon request for human specialist.` 
+          : `${activeCall.summary} | AI Agent ${aishaConfig.name} provided troubleshooting advice.`
+      });
+    }
+    return reply;
   };
 
   const createTicket = (newTktData: Partial<Ticket>, initialComment?: string) => {
@@ -193,7 +435,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       departmentName: departments[0].name,
       channel: 'WHATSAPP_CALL',
       title: `WhatsApp Helpline Call from ${callerName}`,
-      description: `Inbound high-priority voice session routed via WhatsApp Business Cloud API Gateway.`,
+      description: `Inbound high-priority voice session routed via WhatsApp Business Cloud API Gateway. Handled by AI Agent ${aishaConfig.name}.`,
       priority: 'P2_HIGH',
       status: 'IN_PROGRESS',
       isSecuritySensitive: false,
@@ -204,7 +446,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       commentsCount: 1,
       hasCallSession: true,
       assignedTechId: currentUser.id,
-      assignedTechName: currentUser.fullName
+      assignedTechName: `${aishaConfig.name} (AI Support)`
     };
 
     const call: CallSession = {
@@ -216,6 +458,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       status: 'IN_PROGRESS',
       recordingConsentGiven: true,
       startedAt: new Date().toISOString(),
+      handledByAisha: aishaConfig.autoAnswerCalls,
       participants: [
         {
           id: `p-${Date.now()}-1`,
@@ -226,6 +469,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           status: 'CONNECTED',
         },
         {
+          id: `p-${Date.now()}-aisha`,
+          name: `${aishaConfig.name} (DATAPOINT AI)`,
+          phoneNumber: whatsAppConfig.phoneNumberId ? `+1-${whatsAppConfig.phoneNumberId.slice(-4)}` : '+1-800-DPTECH',
+          role: 'AI_AGENT',
+          joinedAt: new Date().toISOString(),
+          status: 'CONNECTED',
+          isAiAgent: true,
+        },
+        {
           id: `p-${Date.now()}-2`,
           name: currentUser.fullName,
           phoneNumber: currentUser.phoneNumber || '+14155554100',
@@ -234,8 +486,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           status: 'CONNECTED',
         }
       ],
-      transcriptText: `[00:01] Caller (${callerName}): Support, I need assistance with our lab connection.\n[00:08] Agent (${currentUser.fullName}): Hello! I am here, checking your campus identity and routing diagnostics.`,
-      summary: `Active WhatsApp call initiated. Caller verified via phone-to-campus link.`
+      transcriptText: `[00:01] Caller (${callerName}): Hello, I need help with an IT issue on campus.\n[00:03] ${aishaConfig.name} (AI Support): Hello ${callerName}! I am ${aishaConfig.name} from DATAPOINT Technologies Support. I have verified your campus profile. How may I assist you today?`,
+      summary: `Active WhatsApp call initiated. Caller verified via phone-to-campus link. Handled by AI Agent ${aishaConfig.name}.`
     };
 
     setTickets(prev => [newTicket, ...prev]);
@@ -244,24 +496,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const initialCmt: TicketComment = {
       id: `cmt-${Date.now()}`,
       ticketId: tktId,
-      authorId: currentUser.id,
-      authorName: 'WhatsApp Ingress Gateway',
-      authorRole: 'TECHNICIAN_T1',
+      authorId: 'sys-aisha',
+      authorName: `${aishaConfig.name} (DATAPOINT AI)`,
+      authorRole: 'AI_AGENT',
       isInternalNote: false,
       channelOrigin: 'WHATSAPP_CALL',
-      content: `Inbound WhatsApp Call established. Consent received for FERPA/GDPR logging.`,
+      content: `🎙️ Inbound WhatsApp Call established. Consent received. AI Agent ${aishaConfig.name} active on live audio stream.`,
       createdAt: new Date().toISOString(),
     };
     setComments(prev => ({ ...prev, [tktId]: [initialCmt] }));
 
     setAuditLogs(prev => [{
       id: `aud-${Date.now()}`,
-      actorName: 'WhatsApp Gateway',
-      actorRole: 'SYSTEM',
+      actorName: `${aishaConfig.name} (AI)`,
+      actorRole: 'AI_AGENT',
       action: 'WHATSAPP_CALL_DISPATCHED',
       ticketRef: newRef,
       timestamp: new Date().toISOString(),
-      details: `Bridge established to tech ${currentUser.fullName} from ${callerNumber}`,
+      details: `Call answered by ${aishaConfig.name} from ${callerNumber} (Session ${call.providerCallId})`,
       ipAddress: '10.200.0.5'
     }, ...prev]);
 
@@ -304,23 +556,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const endWhatsAppCall = () => {
     if (!activeCall) return;
 
-    const completedCall: CallSession = {
-      ...activeCall,
-      status: 'COMPLETED',
-      endedAt: new Date().toISOString(),
-    };
-
-    // Auto-generate post-call Whisper transcript note
     const tktId = activeCall.ticketId;
     const finalNote: TicketComment = {
       id: `cmt-whisper-${Date.now()}`,
       ticketId: tktId,
-      authorId: 'sys-whisper',
-      authorName: 'Whisper STT & LLM Pipeline',
-      authorRole: 'TECHNICIAN_T1',
+      authorId: 'sys-aisha',
+      authorName: `${aishaConfig.name} AI & Whisper STT Pipeline`,
+      authorRole: 'AI_AGENT',
       isInternalNote: false,
       channelOrigin: 'WHATSAPP_CALL',
-      content: `🎙️ **Whisper Call Summary:**\nSession concluded. Participants: ${activeCall.participants.map(p => p.name).join(', ')}.\nSummary: ${activeCall.summary}\nAudio master archive preserved in S3 WORM bucket.`,
+      content: `🎙️ **${aishaConfig.name} Call Wrap-up Summary:**\nSession concluded. Handled by: ${aishaConfig.name}.\nParticipants: ${activeCall.participants.map(p => p.name).join(', ')}.\nSummary: ${activeCall.summary}\nAudio master archive preserved in S3 WORM bucket with SHA-256 fingerprint.`,
       createdAt: new Date().toISOString(),
     };
 
@@ -344,7 +589,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resolveSecurityAction = (ticketId: string, challengePin: string): boolean => {
-    // Challenge PIN validation (mock 6-digit MFA challenge)
     if (challengePin === '774920' || challengePin.length === 6) {
       setTickets(prev => prev.map(t => {
         if (t.id === ticketId) {
@@ -384,6 +628,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         comments,
         activeCall,
         auditLogs,
+        aishaConfig,
+        updateAishaConfig,
+        whatsAppConfig,
+        updateWhatsAppConfig,
+        knowledgeBase,
+        addKnowledgeItem,
+        toggleKnowledgeItem,
+        deleteKnowledgeItem,
+        whatsAppMessages,
+        sendWhatsAppMessage,
+        simulateAishaCallResponse,
+        testWhatsAppConnection,
         createTicket,
         updateTicketStatus,
         assignTicket,

@@ -8,6 +8,7 @@ import { TicketDetailPane } from '@/components/TicketDetailPane';
 import { WhatsAppCallStudio } from '@/components/WhatsAppCallStudio';
 import { CreateTicketModal } from '@/components/CreateTicketModal';
 import { AuditAndGovernanceView } from '@/components/AuditAndGovernanceView';
+import { AdminPanel } from '@/components/AdminPanel';
 import { 
   PlusCircle, 
   PhoneCall, 
@@ -16,13 +17,15 @@ import {
   BookOpen, 
   Activity,
   Layers,
-  Sparkles
+  Sparkles,
+  Settings,
+  Bot
 } from 'lucide-react';
 
 export default function Home() {
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>('tkt-101');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'CONSOLE' | 'STUDIO' | 'GOVERNANCE' | 'ARCHITECTURE'>('CONSOLE');
+  const [activeTab, setActiveTab] = useState<'CONSOLE' | 'STUDIO' | 'GOVERNANCE' | 'ARCHITECTURE' | 'ADMIN'>('CONSOLE');
 
   return (
     <AppProvider>
@@ -55,7 +58,7 @@ export default function Home() {
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                <PhoneCall className="h-3.5 w-3.5" /> WhatsApp Call Gateway
+                <PhoneCall className="h-3.5 w-3.5" /> WhatsApp &amp; Aisha Gateway
               </button>
               <button
                 onClick={() => setActiveTab('GOVERNANCE')}
@@ -65,7 +68,17 @@ export default function Home() {
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                <ShieldCheck className="h-3.5 w-3.5" /> FERPA & Audit Logs
+                <ShieldCheck className="h-3.5 w-3.5" /> FERPA &amp; Audit Logs
+              </button>
+              <button
+                onClick={() => setActiveTab('ADMIN')}
+                className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition ${
+                  activeTab === 'ADMIN'
+                    ? 'bg-indigo-600 text-white shadow'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Settings className="h-3.5 w-3.5" /> Admin Setup &amp; Aisha Config
               </button>
               <button
                 onClick={() => setActiveTab('ARCHITECTURE')}
@@ -124,6 +137,11 @@ export default function Home() {
           {/* TAB 3: GOVERNANCE & AUDIT LOGS */}
           {activeTab === 'GOVERNANCE' && (
             <AuditAndGovernanceView />
+          )}
+
+          {/* TAB: ADMIN & AISHA CONFIGURATION */}
+          {activeTab === 'ADMIN' && (
+            <AdminPanel />
           )}
 
           {/* TAB 4: ARCHITECTURE SPEC & DATA BLUEPRINT */}
