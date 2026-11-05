@@ -23,17 +23,21 @@ export function NavigationHeader() {
         
         {/* Brand */}
         <div className="flex items-center space-x-3">
-          <div className="h-9 w-9 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
-            <ShieldCheck className="h-5 w-5" />
+          <div className="h-11 w-11 rounded-xl bg-white p-1 flex items-center justify-center shadow-md shadow-blue-500/20 border border-slate-700/30 shrink-0 overflow-hidden">
+            <img 
+              src="/datapoint-logo.png" 
+              alt="DATAPOINT Technologies Logo" 
+              className="h-full w-full object-contain"
+            />
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="font-bold text-white text-base tracking-tight">CampusNet IT</span>
-              <span className="text-[10px] uppercase font-semibold bg-indigo-900/60 text-indigo-300 border border-indigo-700/50 px-2 py-0.5 rounded-full">
-                Enterprise Resolver
+              <span className="font-bold text-white text-base tracking-tight">DATAPOINT Technologies</span>
+              <span className="text-[10px] uppercase font-semibold bg-blue-900/60 text-blue-300 border border-blue-700/50 px-2 py-0.5 rounded-full">
+                IT Support Hub
               </span>
             </div>
-            <p className="text-xs text-slate-400">Unified Multi-Channel IT Support & Dispatch</p>
+            <p className="text-xs text-slate-400">Campus-Wide Intelligent IT Support & Dispatch</p>
           </div>
         </div>
 

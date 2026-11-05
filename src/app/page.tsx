@@ -172,6 +172,36 @@ export default function Home() {
 
         </main>
 
+        {/* Footer */}
+        <footer className="border-t border-slate-800 bg-slate-950/90 py-6 mt-12 text-slate-400">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center space-x-3">
+              <div className="h-8 w-8 rounded-lg bg-white p-0.5 flex items-center justify-center shadow-sm shrink-0">
+                <img
+                  src="/datapoint-logo.png"
+                  alt="DATAPOINT Technologies"
+                  className="h-full w-full object-contain"
+                />
+              </div>
+              <p className="text-xs text-slate-300">
+                Powered by <span className="font-bold text-white">DATAPOINT Technologies</span> &mdash;{' '}
+                <span className="text-blue-400">Smart Solutions. Intelligent Future.</span>
+              </p>
+            </div>
+
+            <div className="flex items-center space-x-4 text-xs text-slate-400">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                Campus Grid Online
+              </span>
+              <span>•</span>
+              <span>Enterprise Voice &amp; Dispatch v2.4</span>
+              <span>•</span>
+              <span>&copy; 2026 DATAPOINT Technologies</span>
+            </div>
+          </div>
+        </footer>
+
         {/* Create Ticket Modal */}
         <CreateTicketModal
           isOpen={isCreateModalOpen}
