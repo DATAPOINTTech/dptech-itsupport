@@ -18,10 +18,19 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-export function TicketList({ onSelectTicket, selectedTicketId }: { onSelectTicket: (id: string) => void, selectedTicketId?: string }) {
+export function TicketList({ 
+  onSelectTicket, 
+  selectedTicketId,
+  initialStatusFilter = 'ALL'
+}: { 
+  onSelectTicket: (id: string) => void; 
+  selectedTicketId?: string;
+  initialStatusFilter?: string;
+}) {
   const { tickets, departments, currentUser } = useApp();
   const [filterDept, setFilterDept] = useState<string>('ALL');
   const [filterPriority, setFilterPriority] = useState<string>('ALL');
+  const [filterStatus, setFilterStatus] = useState<string>(initialStatusFilter);
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredTickets = tickets.filter(t => {
@@ -34,6 +43,12 @@ export function TicketList({ onSelectTicket, selectedTicketId }: { onSelectTicke
     
     if (filterDept !== 'ALL' && t.departmentId !== filterDept) return false;
     if (filterPriority !== 'ALL' && t.priority !== filterPriority) return false;
+    if (filterStatus !== 'ALL') {
+      if (filterStatus === 'RESOLVED' && t.status !== 'RESOLVED' && t.status !== 'CLOSED') return false;
+      if (filterStatus === 'NEW' && t.status !== 'NEW') return false;
+      if (filterStatus === 'PENDING' && (t.status === 'RESOLVED' || t.status === 'CLOSED' || t.status === 'NEW')) return false;
+      if (filterStatus !== 'RESOLVED' && filterStatus !== 'NEW' && filterStatus !== 'PENDING' && t.status !== filterStatus) return false;
+    }
     if (searchTerm) {
       const match = t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     t.referenceId.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -114,22 +129,33 @@ export function TicketList({ onSelectTicket, selectedTicketId }: { onSelectTicke
         </div>
 
         {/* Filter Dropdowns */}
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-3 gap-2">
+          <select
+            value={filterStatus}
+            onChange={e => setFilterStatus(e.target.value)}
+            className="bg-slate-900 border border-slate-800 text-slate-300 text-[11px] rounded px-2 py-1 focus:outline-none focus:border-indigo-500"
+          >
+            <option value="ALL">All Statuses</option>
+            <option value="NEW">New</option>
+            <option value="PENDING">Pending / In-Prog</option>
+            <option value="RESOLVED">Resolved</option>
+          </select>
+
           <select
             value={filterDept}
             onChange={e => setFilterDept(e.target.value)}
-            className="bg-slate-900 border border-slate-800 text-slate-300 text-[11px] rounded px-2 py-1 flex-1 focus:outline-none"
+            className="bg-slate-900 border border-slate-800 text-slate-300 text-[11px] rounded px-2 py-1 focus:outline-none focus:border-indigo-500"
           >
-            <option value="ALL">All Departments</option>
+            <option value="ALL">All Depts</option>
             {departments.map(d => (
-              <option key={d.id} value={d.id}>{d.name}</option>
+              <option key={d.id} value={d.id}>{d.name.split(' ')[0]}</option>
             ))}
           </select>
 
           <select
             value={filterPriority}
             onChange={e => setFilterPriority(e.target.value)}
-            className="bg-slate-900 border border-slate-800 text-slate-300 text-[11px] rounded px-2 py-1 focus:outline-none"
+            className="bg-slate-900 border border-slate-800 text-slate-300 text-[11px] rounded px-2 py-1 focus:outline-none focus:border-indigo-500"
           >
             <option value="ALL">All Priorities</option>
             <option value="P1_CRITICAL">P1 Critical</option>

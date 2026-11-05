@@ -124,6 +124,9 @@ export interface Ticket {
   slaBreached: boolean;
   createdAt: string;
   updatedAt: string;
+  resolvedById?: string;
+  resolvedByName?: string;
+  resolvedAt?: string;
   commentsCount: number;
   hasCallSession?: boolean;
 }

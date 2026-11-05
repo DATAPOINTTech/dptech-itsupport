@@ -11,11 +11,12 @@ import {
   SlidersHorizontal,
   GraduationCap,
   Wrench,
-  UserCheck
+  UserCheck,
+  Palette
 } from 'lucide-react';
 
 export function NavigationHeader() {
-  const { currentUser, switchRole, activeCall } = useApp();
+  const { currentUser, switchRole, activeCall, theme, toggleTheme } = useApp();
 
   return (
     <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
@@ -97,6 +98,18 @@ export function NavigationHeader() {
               IT Admin
             </button>
           </div>
+
+          {/* Theme Mode Switcher */}
+          <button
+            onClick={toggleTheme}
+            title={`Active Theme: ${theme === 'cyber-dark' ? 'Cyber Dark' : 'Midnight Blue'} (Click to toggle)`}
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-indigo-500/50 text-slate-300 hover:text-white text-xs transition"
+          >
+            <Palette className="h-3.5 w-3.5 text-indigo-400" />
+            <span className="text-[11px] font-medium">
+              {theme === 'cyber-dark' ? 'Cyber Dark' : 'Midnight Blue'}
+            </span>
+          </button>
 
           {/* Current User Pill */}
           <div className="flex items-center space-x-2 pl-2 border-l border-slate-800">

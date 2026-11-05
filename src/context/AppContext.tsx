@@ -37,6 +37,10 @@ interface AppContextType {
   activeCall: CallSession | null;
   auditLogs: AuditLog[];
   
+  // Theme state
+  theme: 'cyber-dark' | 'midnight-blue';
+  toggleTheme: () => void;
+  
   // Aisha & WhatsApp Setup
   aishaConfig: AishaAgentConfig;
   updateAishaConfig: (newConfig: Partial<AishaAgentConfig>) => void;
@@ -75,6 +79,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [comments, setComments] = useState<Record<string, TicketComment[]>>(initialComments);
   const [activeCall, setActiveCall] = useState<CallSession | null>(initialCallSession);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(initialAuditLogs);
+  const [theme, setTheme] = useState<'cyber-dark' | 'midnight-blue'>('cyber-dark');
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'cyber-dark' ? 'midnight-blue' : 'cyber-dark');
+  };
 
   // Aisha & WhatsApp Configurations
   const [aishaConfig, setAishaConfig] = useState<AishaAgentConfig>(initialAishaConfig);
@@ -354,6 +363,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           ...t,
           status,
           updatedAt: new Date().toISOString(),
+          resolvedById: status === 'RESOLVED' ? (t.resolvedById || currentUser.id) : t.resolvedById,
+          resolvedByName: status === 'RESOLVED' ? (t.resolvedByName || currentUser.fullName) : t.resolvedByName,
+          resolvedAt: status === 'RESOLVED' ? (t.resolvedAt || new Date().toISOString()) : t.resolvedAt,
         };
       }
       return t;
@@ -579,7 +591,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         return {
           ...t,
           status: 'RESOLVED',
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
+          resolvedById: 'sys-aisha',
+          resolvedByName: `${aishaConfig.name} (DATAPOINT AI)`,
+          resolvedAt: new Date().toISOString(),
         };
       }
       return t;
@@ -628,6 +643,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         comments,
         activeCall,
         auditLogs,
+        theme,
+        toggleTheme,
         aishaConfig,
         updateAishaConfig,
         whatsAppConfig,
