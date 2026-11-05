@@ -16,7 +16,8 @@ import {
   WhatsAppMessage,
   Facility,
   FacilityStatus,
-  PendingRegistration
+  PendingRegistration,
+  PortalMode
 } from '@/types';
 import { 
   mockUsers, 
@@ -42,6 +43,13 @@ interface AppContextType {
   activeCall: CallSession | null;
   auditLogs: AuditLog[];
   
+  // Portal & RBAC Navigation
+  portalMode: PortalMode;
+  setPortalMode: (mode: PortalMode) => void;
+  isAuthenticated: boolean;
+  loginAs: (role: 'ADMIN' | 'TECHNICIAN' | 'STUDENT', username?: string, password?: string) => boolean;
+  logout: () => void;
+
   // Theme state
   theme: 'cyber-dark' | 'midnight-blue';
   toggleTheme: () => void;
@@ -89,13 +97,49 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<User>(mockUsers.tech1);
+  const [currentUser, setCurrentUser] = useState<User>(mockUsers.student);
   const [departments] = useState<Department[]>(mockDepartments);
   const [tickets, setTickets] = useState<Ticket[]>(initialTickets);
   const [comments, setComments] = useState<Record<string, TicketComment[]>>(initialComments);
   const [activeCall, setActiveCall] = useState<CallSession | null>(initialCallSession);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(initialAuditLogs);
   const [theme, setTheme] = useState<'cyber-dark' | 'midnight-blue'>('cyber-dark');
+
+  // Multi-portal state
+  const [portalMode, setPortalMode] = useState<PortalMode>('CENTRAL_LANDING');
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+
+  const loginAs = (role: 'ADMIN' | 'TECHNICIAN' | 'STUDENT', username?: string, password?: string): boolean => {
+    if (role === 'ADMIN') {
+      setCurrentUser(mockUsers.admin);
+      setIsAuthenticated(true);
+      setPortalMode('ADMIN_PORTAL');
+      return true;
+    }
+    if (role === 'TECHNICIAN') {
+      if (username?.toLowerCase().includes('elena') || username?.toLowerCase().includes('tech2') || username?.toLowerCase().includes('erostova')) {
+        setCurrentUser(mockUsers.tech2);
+      } else {
+        setCurrentUser(mockUsers.tech1);
+      }
+      setIsAuthenticated(true);
+      setPortalMode('TECHNICIAN_PORTAL');
+      return true;
+    }
+    if (role === 'STUDENT') {
+      setCurrentUser(mockUsers.student);
+      setIsAuthenticated(true);
+      setPortalMode('PUBLIC_PORTAL');
+      return true;
+    }
+    return false;
+  };
+
+  const logout = () => {
+    setIsAuthenticated(false);
+    setCurrentUser(mockUsers.student);
+    setPortalMode('CENTRAL_LANDING');
+  };
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'cyber-dark' ? 'midnight-blue' : 'cyber-dark');
@@ -745,6 +789,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         comments,
         activeCall,
         auditLogs,
+        portalMode,
+        setPortalMode,
+        isAuthenticated,
+        loginAs,
+        logout,
         theme,
         toggleTheme,
         facilities,

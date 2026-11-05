@@ -7,6 +7,12 @@ export type UserRole =
   | 'TECHNICIAN_T3'
   | 'ADMIN';
 
+export type PortalMode = 
+  | 'CENTRAL_LANDING' 
+  | 'PUBLIC_PORTAL' 
+  | 'TECHNICIAN_PORTAL' 
+  | 'ADMIN_PORTAL';
+
 export type TicketChannel = 
   | 'WEB_PORTAL'
   | 'EMAIL'
