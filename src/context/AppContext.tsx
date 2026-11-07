@@ -17,7 +17,13 @@ import {
   Facility,
   FacilityStatus,
   PendingRegistration,
-  PortalMode
+  PortalMode,
+  TechnicianAccount,
+  CampusSwitch,
+  SwitchStatus,
+  DatacenterNode,
+  DatacenterNodeStatus,
+  VlanConfig
 } from '@/types';
 import { 
   mockUsers, 
@@ -31,7 +37,11 @@ import {
   initialKnowledgeBase,
   initialWhatsAppMessages,
   initialFacilities,
-  initialPendingRegistrations
+  initialPendingRegistrations,
+  initialTechnicians,
+  initialSwitches,
+  initialDatacenterNodes,
+  initialVlans
 } from '@/lib/mockData';
 
 interface AppContextType {
@@ -79,6 +89,21 @@ interface AppContextType {
   requestProofRegistration: (id: string, notes?: string) => void;
   submitSelfRegistration: (data: Omit<PendingRegistration, 'id' | 'status' | 'submittedAt'>) => void;
 
+  // Technicians Provisioned by Admin
+  technicians: TechnicianAccount[];
+  provisionTechnician: (tech: Omit<TechnicianAccount, 'id' | 'campusId' | 'provisionedAt' | 'provisionedBy' | 'resolvedTicketsCount'>) => TechnicianAccount;
+  updateTechnicianStatus: (id: string, status: TechnicianAccount['status']) => void;
+  deleteTechnician: (id: string) => void;
+
+  // Campus Network Switches & Datacenter Infrastructure
+  switches: CampusSwitch[];
+  addSwitch: (sw: Omit<CampusSwitch, 'id' | 'lastPingAt'>) => void;
+  updateSwitchStatus: (id: string, status: SwitchStatus) => void;
+  datacenterNodes: DatacenterNode[];
+  addDatacenterNode: (node: Omit<DatacenterNode, 'id' | 'lastChecked'>) => void;
+  updateDatacenterNodeStatus: (id: string, status: DatacenterNodeStatus) => void;
+  vlans: VlanConfig[];
+
   // Actions
   createTicket: (ticket: Partial<Ticket>, initialComment?: string) => Ticket;
   updateTicketStatus: (ticketId: string, status: Ticket['status']) => void;
@@ -119,7 +144,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return true;
     }
     if (role === 'TECHNICIAN') {
-      if (username?.toLowerCase().includes('elena') || username?.toLowerCase().includes('tech2') || username?.toLowerCase().includes('erostova')) {
+      const match = technicians.find(t => 
+        t.username.toLowerCase() === username?.trim().toLowerCase() ||
+        t.email.toLowerCase() === username?.trim().toLowerCase() ||
+        t.fullName.toLowerCase().includes(username?.trim().toLowerCase() || '')
+      );
+      if (match) {
+        setCurrentUser({
+          id: match.id,
+          campusId: match.campusId,
+          fullName: match.fullName,
+          email: match.email,
+          phoneNumber: match.phoneNumber,
+          role: match.role,
+          departmentId: match.departmentId,
+          isPhoneVerified: true,
+        });
+      } else if (username?.toLowerCase().includes('elena') || username?.toLowerCase().includes('tech2')) {
         setCurrentUser(mockUsers.tech2);
       } else {
         setCurrentUser(mockUsers.tech1);
@@ -232,6 +273,157 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ipAddress: '127.0.0.1'
     }, ...prev]);
   };
+
+  // Technicians Provisioned by Admin
+  const [technicians, setTechnicians] = useState<TechnicianAccount[]>(() => {
+    try {
+      const stored = localStorage.getItem('dptech_technicians');
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return initialTechnicians;
+  });
+
+  const provisionTechnician = (techData: Omit<TechnicianAccount, 'id' | 'campusId' | 'provisionedAt' | 'provisionedBy' | 'resolvedTicketsCount'>): TechnicianAccount => {
+    const empNum = Math.floor(7700 + Math.random() * 200);
+    const newTech: TechnicianAccount = {
+      ...techData,
+      id: `usr-tech-${Date.now()}`,
+      campusId: `EMP-${empNum}`,
+      provisionedAt: new Date().toISOString(),
+      provisionedBy: `${currentUser.fullName} (Administrator)`,
+      resolvedTicketsCount: 0,
+      status: 'ACTIVE',
+    };
+
+    setTechnicians(prev => {
+      const updated = [newTech, ...prev];
+      try {
+        localStorage.setItem('dptech_technicians', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    setAuditLogs(prev => [{
+      id: `aud-${Date.now()}`,
+      actorName: currentUser.fullName,
+      actorRole: currentUser.role,
+      action: 'TECHNICIAN_ACCOUNT_PROVISIONED',
+      timestamp: new Date().toISOString(),
+      details: `Admin provisioned technician account for ${newTech.fullName} (${newTech.username}) with scope: ${newTech.departmentName} (${newTech.role}).`,
+      ipAddress: '127.0.0.1'
+    }, ...prev]);
+
+    return newTech;
+  };
+
+  const updateTechnicianStatus = (id: string, status: TechnicianAccount['status']) => {
+    setTechnicians(prev => {
+      const updated = prev.map(t => t.id === id ? { ...t, status } : t);
+      try {
+        localStorage.setItem('dptech_technicians', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const deleteTechnician = (id: string) => {
+    setTechnicians(prev => {
+      const updated = prev.filter(t => t.id !== id);
+      try {
+        localStorage.setItem('dptech_technicians', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  // Campus Network Switches & Datacenter Infrastructure
+  const [switches, setSwitches] = useState<CampusSwitch[]>(() => {
+    try {
+      const stored = localStorage.getItem('dptech_switches');
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return initialSwitches;
+  });
+
+  const addSwitch = (swData: Omit<CampusSwitch, 'id' | 'lastPingAt'>) => {
+    const newSw: CampusSwitch = {
+      ...swData,
+      id: `sw-${Date.now()}`,
+      lastPingAt: 'Just now (0.5ms)',
+    };
+    setSwitches(prev => {
+      const updated = [newSw, ...prev];
+      try {
+        localStorage.setItem('dptech_switches', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    setAuditLogs(prev => [{
+      id: `aud-${Date.now()}`,
+      actorName: currentUser.fullName,
+      actorRole: currentUser.role,
+      action: 'NETWORK_SWITCH_PROVISIONED',
+      timestamp: new Date().toISOString(),
+      details: `Admin added campus switch ${newSw.hostname} (${newSw.model}) at ${newSw.building}.`,
+      ipAddress: '127.0.0.1'
+    }, ...prev]);
+  };
+
+  const updateSwitchStatus = (id: string, status: SwitchStatus) => {
+    setSwitches(prev => {
+      const updated = prev.map(s => s.id === id ? { ...s, status } : s);
+      try {
+        localStorage.setItem('dptech_switches', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const [datacenterNodes, setDatacenterNodes] = useState<DatacenterNode[]>(() => {
+    try {
+      const stored = localStorage.getItem('dptech_dc_nodes');
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return initialDatacenterNodes;
+  });
+
+  const addDatacenterNode = (nodeData: Omit<DatacenterNode, 'id' | 'lastChecked'>) => {
+    const newNode: DatacenterNode = {
+      ...nodeData,
+      id: `dc-${Date.now()}`,
+      lastChecked: 'Real-time Telemetry (SNMPv3)',
+    };
+    setDatacenterNodes(prev => {
+      const updated = [newNode, ...prev];
+      try {
+        localStorage.setItem('dptech_dc_nodes', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    setAuditLogs(prev => [{
+      id: `aud-${Date.now()}`,
+      actorName: currentUser.fullName,
+      actorRole: currentUser.role,
+      action: 'DATACENTER_NODE_PROVISIONED',
+      timestamp: new Date().toISOString(),
+      details: `Admin provisioned Datacenter Node ${newNode.name} (${newNode.type}) in ${newNode.rack}.`,
+      ipAddress: '127.0.0.1'
+    }, ...prev]);
+  };
+
+  const updateDatacenterNodeStatus = (id: string, status: DatacenterNodeStatus) => {
+    setDatacenterNodes(prev => {
+      const updated = prev.map(n => n.id === id ? { ...n, status } : n);
+      try {
+        localStorage.setItem('dptech_dc_nodes', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const [vlans] = useState<VlanConfig[]>(initialVlans);
 
   // Aisha & WhatsApp Configurations
   const [aishaConfig, setAishaConfig] = useState<AishaAgentConfig>(initialAishaConfig);
@@ -928,6 +1120,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         rejectRegistration,
         requestProofRegistration,
         submitSelfRegistration,
+        technicians,
+        provisionTechnician,
+        updateTechnicianStatus,
+        deleteTechnician,
+        switches,
+        addSwitch,
+        updateSwitchStatus,
+        datacenterNodes,
+        addDatacenterNode,
+        updateDatacenterNodeStatus,
+        vlans,
         aishaConfig,
         updateAishaConfig,
         whatsAppConfig,

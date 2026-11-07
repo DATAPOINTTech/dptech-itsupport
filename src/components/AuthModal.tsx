@@ -24,7 +24,7 @@ export function AuthModal({
   onClose: () => void; 
   targetRole?: 'ADMIN' | 'TECHNICIAN' | 'STUDENT';
 }) {
-  const { loginAs } = useApp();
+  const { loginAs, technicians } = useApp();
 
   const [role, setRole] = useState<'ADMIN' | 'TECHNICIAN' | 'STUDENT'>(targetRole);
   const [username, setUsername] = useState(
@@ -194,20 +194,16 @@ export function AuthModal({
               >
                 Log in as IT Admin (David)
               </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemoFill('TECHNICIAN', 'marcus')}
-                className="bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700/40 text-emerald-300 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition"
-              >
-                Tier-1 Tech (Marcus)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemoFill('TECHNICIAN', 'elena')}
-                className="bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700/40 text-emerald-300 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition"
-              >
-                Tier-2 Sec Tech (Elena)
-              </button>
+              {technicians.slice(0, 4).map(tech => (
+                <button
+                  key={tech.id}
+                  type="button"
+                  onClick={() => handleQuickDemoFill('TECHNICIAN', tech.username)}
+                  className="bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700/40 text-emerald-300 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition"
+                >
+                  {tech.fullName.split(' ')[0]} ({tech.role.replace('TECHNICIAN_', 'T')})
+                </button>
+              ))}
             </div>
           </div>
 

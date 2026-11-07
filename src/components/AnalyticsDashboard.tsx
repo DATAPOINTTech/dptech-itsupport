@@ -39,20 +39,13 @@ interface MemberStats {
 }
 
 export function AnalyticsDashboard({ onNavigateToTickets }: { onNavigateToTickets: (filterStatus?: string) => void }) {
-  const { tickets, departments, aishaConfig, assignTicket } = useApp();
+  const { tickets, departments, aishaConfig, assignTicket, technicians } = useApp();
   const [timeRange, setTimeRange] = useState<'TODAY' | 'WEEK' | 'MONTH' | 'ALL'>('ALL');
   const [assignSuccessToast, setAssignSuccessToast] = useState<string | null>(null);
 
-  const handleAdminAssign = (ticketId: string, techKey: string) => {
-    let techId = 'usr-tech-1';
-    let techName = 'Marcus Vance (Tier-1 Net/AV)';
-    if (techKey === 'tech2') {
-      techId = 'usr-tech-2';
-      techName = 'Elena Rostova (Tier-2 InfoSec)';
-    } else if (techKey === 'tech3') {
-      techId = 'usr-tech-3';
-      techName = 'Alex Rivera (Hardware Specialist)';
-    }
+  const handleAdminAssign = (ticketId: string, techId: string) => {
+    const tech = technicians.find(t => t.id === techId);
+    const techName = tech ? `${tech.fullName} (${tech.role.replace('TECHNICIAN_', 'Tier-')})` : 'Assigned Technician';
     assignTicket(ticketId, techId, techName);
     setAssignSuccessToast(`Ticket assigned to ${techName}`);
     setTimeout(() => setAssignSuccessToast(null), 3000);
@@ -93,28 +86,17 @@ export function AnalyticsDashboard({ onNavigateToTickets }: { onNavigateToTicket
       csat: 99.4,
       avatarBg: 'bg-gradient-to-tr from-indigo-600 to-purple-600 text-white',
     },
-    {
-      id: 'usr-tech-1',
-      name: 'Marcus Vance',
-      role: 'Tier-1 Network & Infrastructure Lead',
+    ...technicians.map((tech, idx) => ({
+      id: tech.id,
+      name: tech.fullName,
+      role: `${tech.departmentName} (${tech.role.replace('TECHNICIAN_', 'Tier-')})`,
       isAi: false,
-      resolvedCount: tickets.filter(t => t.resolvedById === 'usr-tech-1' || (t.assignedTechId === 'usr-tech-1' && t.status === 'RESOLVED')).length + 11,
-      pendingCount: tickets.filter(t => t.assignedTechId === 'usr-tech-1' && (t.status === 'IN_PROGRESS' || t.status === 'TRIAGED')).length,
-      avgResolutionMinutes: 14.8,
-      csat: 96.8,
-      avatarBg: 'bg-emerald-600 text-white',
-    },
-    {
-      id: 'usr-tech-2',
-      name: 'Elena Rostova',
-      role: 'Tier-2 InfoSec & Identity Specialist',
-      isAi: false,
-      resolvedCount: tickets.filter(t => t.resolvedById === 'usr-tech-2' || (t.assignedTechId === 'usr-tech-2' && t.status === 'RESOLVED')).length + 8,
-      pendingCount: tickets.filter(t => t.assignedTechId === 'usr-tech-2' && (t.status === 'PENDING_APPROVAL' || t.status === 'IN_PROGRESS')).length,
-      avgResolutionMinutes: 24.2,
-      csat: 97.2,
-      avatarBg: 'bg-indigo-600 text-white',
-    },
+      resolvedCount: (tech.resolvedTicketsCount || 0) + tickets.filter(t => t.resolvedById === tech.id || (t.assignedTechId === tech.id && (t.status === 'RESOLVED' || t.status === 'CLOSED'))).length,
+      pendingCount: tickets.filter(t => t.assignedTechId === tech.id && t.status !== 'RESOLVED' && t.status !== 'CLOSED').length,
+      avgResolutionMinutes: 14 + (idx * 3),
+      csat: 96 + (idx % 3),
+      avatarBg: idx % 3 === 0 ? 'bg-emerald-600 text-white' : idx % 3 === 1 ? 'bg-indigo-600 text-white' : 'bg-cyan-600 text-white',
+    })),
     {
       id: 'usr-admin-1',
       name: 'David Sterling',
@@ -587,9 +569,11 @@ export function AnalyticsDashboard({ onNavigateToTickets }: { onNavigateToTicket
                       className="bg-slate-900 border border-slate-700 text-xs text-indigo-300 font-semibold rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500 cursor-pointer"
                     >
                       <option value="" disabled>⚡ Assign Tech...</option>
-                      <option value="tech1" className="bg-slate-900 text-white">Marcus Vance (Tier-1 Net/AV)</option>
-                      <option value="tech2" className="bg-slate-900 text-white">Elena Rostova (Tier-2 InfoSec)</option>
-                      <option value="tech3" className="bg-slate-900 text-white">Alex Rivera (Hardware Specialist)</option>
+                      {technicians.filter(t => t.status !== 'SUSPENDED').map(t => (
+                        <option key={t.id} value={t.id} className="bg-slate-900 text-white">
+                          {t.fullName} ({t.role.replace('TECHNICIAN_', 'Tier-')})
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>

@@ -33,7 +33,8 @@ export function TicketDetailPane({ ticketId }: { ticketId: string | null }) {
     assignTicket, 
     resolveTicket,
     addComment, 
-    resolveSecurityAction 
+    resolveSecurityAction,
+    technicians
   } = useApp();
 
   const [commentText, setCommentText] = useState('');
@@ -78,13 +79,10 @@ export function TicketDetailPane({ ticketId }: { ticketId: string | null }) {
     assignTicket(ticket.id, currentUser.id, currentUser.fullName);
   };
 
-  const handleAdminAssign = (techKey: string) => {
-    if (techKey === 'tech1') {
-      assignTicket(ticket.id, 'usr-tech-1', 'Marcus Vance (Tier-1 Net/AV)');
-    } else if (techKey === 'tech2') {
-      assignTicket(ticket.id, 'usr-tech-2', 'Elena Rostova (Tier-2 InfoSec)');
-    } else if (techKey === 'tech3') {
-      assignTicket(ticket.id, 'usr-tech-3', 'Alex Rivera (Hardware Specialist)');
+  const handleAdminAssign = (techId: string) => {
+    const tech = technicians.find(t => t.id === techId);
+    if (tech) {
+      assignTicket(ticket.id, tech.id, `${tech.fullName} (${tech.role.replace('TECHNICIAN_', 'Tier-')})`);
     }
   };
 
@@ -158,9 +156,11 @@ export function TicketDetailPane({ ticketId }: { ticketId: string | null }) {
                   className="bg-transparent text-xs text-indigo-300 font-medium focus:outline-none cursor-pointer"
                 >
                   <option value="" disabled>Select Technician...</option>
-                  <option value="tech1" className="bg-slate-900 text-white">Marcus Vance (Tier-1 Net/AV)</option>
-                  <option value="tech2" className="bg-slate-900 text-white">Elena Rostova (Tier-2 InfoSec)</option>
-                  <option value="tech3" className="bg-slate-900 text-white">Alex Rivera (Hardware Specialist)</option>
+                  {technicians.filter(t => t.status !== 'SUSPENDED').map(t => (
+                    <option key={t.id} value={t.id} className="bg-slate-900 text-white">
+                      {t.fullName} ({t.role.replace('TECHNICIAN_', 'Tier-')})
+                    </option>
+                  ))}
                 </select>
               </div>
             )}

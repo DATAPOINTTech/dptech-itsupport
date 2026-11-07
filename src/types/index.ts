@@ -113,6 +113,90 @@ export interface PendingRegistration {
   verificationNotes?: string;
 }
 
+// -------------------------------------------------------------
+// Technician Account & Staff Provisioning
+// -------------------------------------------------------------
+export interface TechnicianAccount {
+  id: string;
+  campusId: string;
+  fullName: string;
+  username: string;
+  email: string;
+  phoneNumber?: string;
+  role: 'TECHNICIAN_T1' | 'TECHNICIAN_T2' | 'TECHNICIAN_T3';
+  departmentId: string;
+  departmentName: string;
+  skills: string;
+  status: 'ACTIVE' | 'ON_CALL' | 'SUSPENDED';
+  initialPassword?: string;
+  provisionedAt: string;
+  provisionedBy: string;
+  resolvedTicketsCount: number;
+}
+
+// -------------------------------------------------------------
+// Campus Switches & Datacenter Infrastructure
+// -------------------------------------------------------------
+export type SwitchStatus = 'OPERATIONAL' | 'DEGRADED' | 'MAINTENANCE' | 'PORT_FAULT';
+
+export interface CampusSwitch {
+  id: string;
+  hostname: string;
+  model: string;
+  building: string;
+  rackLocation: string;
+  ipAddress: string;
+  mgmtVlan: number;
+  totalPorts: number;
+  activePorts: number;
+  poeBudgetWatts: number;
+  poeLoadWatts: number;
+  status: SwitchStatus;
+  firmwareVersion: string;
+  vlans: number[];
+  lastPingAt: string;
+}
+
+export type DatacenterNodeType = 
+  | 'HYPERVISOR_SERVER' 
+  | 'GPU_CLUSTER' 
+  | 'SAN_STORAGE' 
+  | 'UPS_POWER' 
+  | 'CRAC_COOLING' 
+  | 'CORE_ROUTER';
+
+export type DatacenterNodeStatus = 'HEALTHY' | 'WARNING' | 'CRITICAL' | 'MAINTENANCE';
+
+export interface DatacenterNode {
+  id: string;
+  name: string;
+  type: DatacenterNodeType;
+  model: string;
+  rack: string;
+  ipAddress: string;
+  specs: string;
+  metrics: {
+    cpuLoadPercent?: number;
+    ramUsedPercent?: number;
+    storageUsedTb?: number;
+    storageTotalTb?: number;
+    temperatureC?: number;
+    powerKw?: number;
+    upsRuntimeMinutes?: number;
+  };
+  status: DatacenterNodeStatus;
+  lastChecked: string;
+}
+
+export interface VlanConfig {
+  vlanId: number;
+  name: string;
+  subnet: string;
+  gateway: string;
+  description: string;
+  dhcpScope: string;
+}
+
 export interface TicketComment {
   id: string;
   ticketId: string;

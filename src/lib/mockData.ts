@@ -1,4 +1,15 @@
-import { User, Department, Ticket, TicketComment, CallSession, AuditLog } from '@/types';
+import { 
+  User, 
+  Department, 
+  Ticket, 
+  TicketComment, 
+  CallSession, 
+  AuditLog,
+  TechnicianAccount,
+  CampusSwitch,
+  DatacenterNode,
+  VlanConfig
+} from '@/types';
 
 export const mockDepartments: Department[] = [
   { id: 'dep-1', code: 'NET_WIFI', name: 'Campus Wi-Fi & Core Network', escalationEmail: 'netops@campus.edu', defaultSlaMinutes: 120 },
@@ -691,5 +702,270 @@ export const initialPendingRegistrations: PendingRegistration[] = [
     status: 'NEEDS_PROOF',
     submittedAt: 'Yesterday at 04:45 PM',
     verificationNotes: 'Please upload front photograph of current university semester card.'
+  }
+];
+
+// -------------------------------------------------------------
+// Initial Technicians Provisioned by Admin
+// -------------------------------------------------------------
+export const initialTechnicians: TechnicianAccount[] = [
+  {
+    id: 'usr-tech-1',
+    campusId: 'EMP-7701',
+    fullName: 'Marcus Vance',
+    username: 'marcus',
+    email: 'mvance@it.campus.edu',
+    phoneNumber: '+1 (415) 555-4100',
+    role: 'TECHNICIAN_T1',
+    departmentId: 'dep-1',
+    departmentName: 'Campus Wi-Fi & Core Network',
+    skills: 'Cisco Catalyst 9300/9500, Aruba CX 6300, 802.1X RADIUS, Fiber SFP+ Splice',
+    status: 'ACTIVE',
+    initialPassword: '••••••••',
+    provisionedAt: '2026-09-01T08:00:00Z',
+    provisionedBy: 'David Sterling (Admin)',
+    resolvedTicketsCount: 42,
+  },
+  {
+    id: 'usr-tech-2',
+    campusId: 'EMP-7712',
+    fullName: 'Elena Rostova',
+    username: 'elena',
+    email: 'erostova@it.campus.edu',
+    phoneNumber: '+1 (415) 555-4102',
+    role: 'TECHNICIAN_T2',
+    departmentId: 'dep-2',
+    departmentName: 'Identity & Access / MFA',
+    skills: 'Microsoft Entra ID, Duo Security 2FA, Fortinet FortiGate, HashiCorp Vault, RADIUS',
+    status: 'ACTIVE',
+    initialPassword: '••••••••',
+    provisionedAt: '2026-09-15T09:30:00Z',
+    provisionedBy: 'David Sterling (Admin)',
+    resolvedTicketsCount: 38,
+  },
+  {
+    id: 'usr-tech-3',
+    campusId: 'EMP-7725',
+    fullName: 'Alex Rivera',
+    username: 'alex',
+    email: 'arivera@it.campus.edu',
+    phoneNumber: '+1 (415) 555-4109',
+    role: 'TECHNICIAN_T1',
+    departmentId: 'dep-3',
+    departmentName: 'Computer Labs & Workstations',
+    skills: 'Dell PowerEdge iDRAC9, Crestron 4K AV Matrix, Epson Laser Projectors, Dante Audio',
+    status: 'ACTIVE',
+    initialPassword: '••••••••',
+    provisionedAt: '2026-10-02T11:00:00Z',
+    provisionedBy: 'David Sterling (Admin)',
+    resolvedTicketsCount: 29,
+  }
+];
+
+// -------------------------------------------------------------
+// Initial Campus Network Switches
+// -------------------------------------------------------------
+export const initialSwitches: CampusSwitch[] = [
+  {
+    id: 'sw-core-01',
+    hostname: 'SW-CORE-DC1-C9500',
+    model: 'Cisco Catalyst 9500 (32-Port 40G Core)',
+    building: 'Central Datacenter',
+    rackLocation: 'Datacenter Rack A4 (Row 1)',
+    ipAddress: '10.50.1.1',
+    mgmtVlan: 100,
+    totalPorts: 32,
+    activePorts: 28,
+    poeBudgetWatts: 0,
+    poeLoadWatts: 0,
+    status: 'OPERATIONAL',
+    firmwareVersion: 'Cisco IOS-XE 17.12.3',
+    vlans: [10, 20, 30, 99, 100],
+    lastPingAt: 'Just now (0.4ms)',
+  },
+  {
+    id: 'sw-eng-02',
+    hostname: 'SW-ACC-ENG-C9300-48P',
+    model: 'Cisco Catalyst 9300 (48-Port PoE+ 740W)',
+    building: 'Engineering Building',
+    rackLocation: 'IDF-2 Closet (Floor 2)',
+    ipAddress: '10.50.10.2',
+    mgmtVlan: 100,
+    totalPorts: 48,
+    activePorts: 44,
+    poeBudgetWatts: 740,
+    poeLoadWatts: 420,
+    status: 'OPERATIONAL',
+    firmwareVersion: 'Cisco IOS-XE 17.09.04a',
+    vlans: [10, 20, 30],
+    lastPingAt: 'Just now (1.2ms)',
+  },
+  {
+    id: 'sw-cs-03',
+    hostname: 'SW-LAB204-ARUBA-CX6300',
+    model: 'Aruba CX 6300M (48-Port 1G/10G SFP+)',
+    building: 'Turing Computer Science Wing',
+    rackLocation: 'Lab 204 Rack B',
+    ipAddress: '10.50.20.4',
+    mgmtVlan: 100,
+    totalPorts: 48,
+    activePorts: 36,
+    poeBudgetWatts: 500,
+    poeLoadWatts: 280,
+    status: 'PORT_FAULT',
+    firmwareVersion: 'ArubaOS-CX 10.13.0005',
+    vlans: [20, 100],
+    lastPingAt: '12s ago (Port 1/1/24 flapping)',
+  },
+  {
+    id: 'sw-lib-04',
+    hostname: 'SW-DIST-LIB-EX4300',
+    model: 'Juniper EX4300 (48-Port PoE+ Layer 3)',
+    building: 'Science & Arts Library',
+    rackLocation: 'Basement MDF Rack 1',
+    ipAddress: '10.50.30.1',
+    mgmtVlan: 100,
+    totalPorts: 48,
+    activePorts: 41,
+    poeBudgetWatts: 720,
+    poeLoadWatts: 390,
+    status: 'OPERATIONAL',
+    firmwareVersion: 'Junos OS 22.4R2-S2',
+    vlans: [10, 30, 100],
+    lastPingAt: 'Just now (0.8ms)',
+  }
+];
+
+// -------------------------------------------------------------
+// Initial Datacenter Infrastructure Nodes
+// -------------------------------------------------------------
+export const initialDatacenterNodes: DatacenterNode[] = [
+  {
+    id: 'dc-node-1',
+    name: 'DC-HYPERVISOR-01',
+    type: 'HYPERVISOR_SERVER',
+    model: 'Dell PowerEdge R760 (Dual Xeon Platinum 8480+)',
+    rack: 'Rack A1 (U1-U2)',
+    ipAddress: '10.99.1.10',
+    specs: '112 vCPUs, 512GB ECC DDR5, Dual 25GbE Mellanox ConnectX-6',
+    metrics: {
+      cpuLoadPercent: 28,
+      ramUsedPercent: 62,
+      temperatureC: 19.8,
+      powerKw: 0.68,
+    },
+    status: 'HEALTHY',
+    lastChecked: 'Real-time Telemetry (SNMPv3)',
+  },
+  {
+    id: 'dc-node-2',
+    name: 'DC-AI-GPU-CLUSTER-01',
+    type: 'GPU_CLUSTER',
+    model: 'Dell PowerEdge XE8640 (4x NVIDIA L40S 48GB)',
+    rack: 'Rack A2 (U3-U6)',
+    ipAddress: '10.99.1.11',
+    specs: '192GB GDDR6 VRAM, PyTorch CUDA 12.4, Machine Learning & LMS LLM inference',
+    metrics: {
+      cpuLoadPercent: 44,
+      ramUsedPercent: 78,
+      temperatureC: 24.2,
+      powerKw: 1.45,
+    },
+    status: 'HEALTHY',
+    lastChecked: 'Real-time Telemetry (NVML)',
+  },
+  {
+    id: 'dc-node-3',
+    name: 'DC-SAN-ALLFLASH-01',
+    type: 'SAN_STORAGE',
+    model: 'TrueNAS Enterprise Enterprise-Z Z50 (NVMe Pool)',
+    rack: 'Rack A3 (U7-U9)',
+    ipAddress: '10.99.2.1',
+    specs: '120TB NVMe ZFS RAIDZ2, 40Gbps iSCSI/NFS Multipath, Snapshot replication',
+    metrics: {
+      storageUsedTb: 45.8,
+      storageTotalTb: 120.0,
+      temperatureC: 21.0,
+      powerKw: 0.52,
+    },
+    status: 'HEALTHY',
+    lastChecked: 'Real-time Telemetry (ZFS Pool Healthy)',
+  },
+  {
+    id: 'dc-node-4',
+    name: 'DC-UPS-APC-SYMMETRA-80K',
+    type: 'UPS_POWER',
+    model: 'Schneider Electric APC Symmetra PX 80kW Modular UPS',
+    rack: 'Power Bay B (Modular 480V 3-Phase)',
+    ipAddress: '10.99.5.1',
+    specs: 'N+1 Redundant Power Modules, Li-ion Battery Cabinets, Automatic Static Bypass',
+    metrics: {
+      powerKw: 46.2,
+      upsRuntimeMinutes: 58,
+      temperatureC: 22.4,
+    },
+    status: 'HEALTHY',
+    lastChecked: 'Online Inverter - Utility Normal',
+  },
+  {
+    id: 'dc-node-5',
+    name: 'DC-CRAC-LIEBERT-CHILLER',
+    type: 'CRAC_COOLING',
+    model: 'Vertiv Liebert Deluxe System CRAC (Direct Expansion)',
+    rack: 'Datacenter North Cool Aisle Wall',
+    ipAddress: '10.99.6.1',
+    specs: 'Dual Scroll Compressors, EC Fans, Variable Air Volume (VAV), EcoPhase Economizer',
+    metrics: {
+      temperatureC: 19.4,
+      powerKw: 8.4,
+    },
+    status: 'HEALTHY',
+    lastChecked: 'Temperature Setpoint: 19.5°C (Locked)',
+  }
+];
+
+// -------------------------------------------------------------
+// Campus VLAN Architecture
+// -------------------------------------------------------------
+export const initialVlans: VlanConfig[] = [
+  {
+    vlanId: 10,
+    name: 'VLAN_EDUROAM_WIFI',
+    subnet: '10.10.0.0/16',
+    gateway: '10.10.0.1',
+    description: 'Campus-wide enterprise Wi-Fi 6E (802.1X PEAP / MSCHAPv2)',
+    dhcpScope: '10.10.1.1 - 10.10.254.254 (Lease: 2 hrs)',
+  },
+  {
+    vlanId: 20,
+    name: 'VLAN_LAB_WORKSTATIONS',
+    subnet: '10.20.0.0/20',
+    gateway: '10.20.0.1',
+    description: 'Computer science, robotics, and design studio desktop workstations',
+    dhcpScope: '10.20.1.1 - 10.20.15.254 (Lease: 24 hrs)',
+  },
+  {
+    vlanId: 30,
+    name: 'VLAN_VOIP_WHATSAPP_PBX',
+    subnet: '10.30.0.0/24',
+    gateway: '10.30.0.1',
+    description: 'LiveKit SFU WebRTC & WhatsApp Helpline VoIP audio priority traffic',
+    dhcpScope: '10.30.0.10 - 10.30.0.200 (QoS DSCP 46 / EF)',
+  },
+  {
+    vlanId: 99,
+    name: 'VLAN_DATACENTER_SERVERS',
+    subnet: '10.99.0.0/22',
+    gateway: '10.99.0.1',
+    description: 'Proxmox virtualization cluster, TrueNAS SAN storage, and AI GPU compute',
+    dhcpScope: 'Static Reservations Only / CIDR /22',
+  },
+  {
+    vlanId: 100,
+    name: 'VLAN_OOBM_MANAGEMENT',
+    subnet: '10.100.0.0/24',
+    gateway: '10.100.0.1',
+    description: 'Isolated out-of-band switch, router, and iDRAC server management',
+    dhcpScope: 'Static Hardware ACL Restricted',
   }
 ];
