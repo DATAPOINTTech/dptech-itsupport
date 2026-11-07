@@ -14,25 +14,28 @@ import {
   Users, 
   ShieldCheck, 
   Zap, 
-  Star,
-  Activity,
-  ArrowLeft
+  Star, 
+  Activity, 
+  ArrowLeft,
+  UserPlus,
+  Check,
+  Inbox
 } from 'lucide-react';
 
 export function TechnicianWorkspace({ onReturnToLanding }: { onReturnToLanding: () => void }) {
-  const { currentUser, tickets, activeCall, departments } = useApp();
+  const { currentUser, tickets, activeCall, departments, assignTicket } = useApp();
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>('tkt-101');
   const [techTab, setTechTab] = useState<'QUEUE' | 'CALL_STUDIO'>('QUEUE');
+  const [queueFilter, setQueueFilter] = useState<'ALL' | 'UNASSIGNED' | 'MY_ASSIGNED' | 'RESOLVED'>('ALL');
 
   const dept = departments.find(d => d.id === currentUser.departmentId);
 
-  // Department-scoped & personal tickets
-  const techDepartmentTickets = tickets.filter(t => 
-    !currentUser.departmentId || t.departmentId === currentUser.departmentId
-  );
+  // Tickets filtered by scope
+  const unassignedTickets = tickets.filter(t => !t.assignedTechId && t.status !== 'RESOLVED' && t.status !== 'CLOSED');
   const myAssignedTickets = tickets.filter(t => t.assignedTechId === currentUser.id);
-  const myResolvedCount = tickets.filter(t => t.resolvedById === currentUser.id || (t.assignedTechId === currentUser.id && t.status === 'RESOLVED')).length;
-  const myPendingCount = myAssignedTickets.filter(t => t.status !== 'RESOLVED' && t.status !== 'CLOSED').length;
+  const myActiveWork = myAssignedTickets.filter(t => t.status !== 'RESOLVED' && t.status !== 'CLOSED');
+  const myResolvedTickets = tickets.filter(t => t.resolvedById === currentUser.id || (t.assignedTechId === currentUser.id && t.status === 'RESOLVED'));
+  const myResolvedCount = myResolvedTickets.length;
 
   return (
     <div className="space-y-6">
@@ -55,44 +58,56 @@ export function TechnicianWorkspace({ onReturnToLanding }: { onReturnToLanding: 
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-1">
-                Assigned Functional Scope: <strong className="text-slate-200">{dept?.name || 'All Campus Infrastructure'}</strong> &bull; Campus ID: <code className="text-indigo-300">{currentUser.campusId}</code>
+                Functional Scope: <strong className="text-slate-200">{dept?.name || 'All Campus Infrastructure'}</strong> &bull; Campus ID: <code className="text-indigo-300">{currentUser.campusId}</code>
               </p>
             </div>
           </div>
 
           {/* Quick Metrics */}
           <div className="flex items-center gap-3">
-            <div className="bg-slate-950 p-3 rounded-xl border border-emerald-500/30 text-center min-w-[90px]">
+            <div 
+              onClick={() => { setTechTab('QUEUE'); setQueueFilter('RESOLVED'); }}
+              className="bg-slate-950 p-3 rounded-xl border border-emerald-500/30 text-center min-w-[90px] cursor-pointer hover:border-emerald-400 transition"
+              title="Click to view resolved tickets with reasons"
+            >
               <p className="text-[10px] text-emerald-400 font-semibold">My Resolved</p>
               <p className="text-xl font-bold text-white font-mono">{myResolvedCount + 12}</p>
             </div>
-            <div className="bg-slate-950 p-3 rounded-xl border border-amber-500/30 text-center min-w-[90px]">
-              <p className="text-[10px] text-amber-400 font-semibold">Active Queue</p>
-              <p className="text-xl font-bold text-white font-mono">{myPendingCount}</p>
+            <div 
+              onClick={() => { setTechTab('QUEUE'); setQueueFilter('MY_ASSIGNED'); }}
+              className="bg-slate-950 p-3 rounded-xl border border-amber-500/30 text-center min-w-[90px] cursor-pointer hover:border-amber-400 transition"
+              title="Click to view my active assignments"
+            >
+              <p className="text-[10px] text-amber-400 font-semibold">My Active Queue</p>
+              <p className="text-xl font-bold text-white font-mono">{myActiveWork.length}</p>
             </div>
-            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-center min-w-[90px]">
-              <p className="text-[10px] text-slate-400 font-semibold">Avg MTTR</p>
-              <p className="text-xl font-bold text-white font-mono">14.8m</p>
+            <div 
+              onClick={() => { setTechTab('QUEUE'); setQueueFilter('UNASSIGNED'); }}
+              className="bg-slate-950 p-3 rounded-xl border border-blue-500/30 text-center min-w-[90px] cursor-pointer hover:border-blue-400 transition"
+              title="Click to view unassigned tickets ready to claim"
+            >
+              <p className="text-[10px] text-blue-400 font-semibold">Ready to Claim</p>
+              <p className="text-xl font-bold text-white font-mono">{unassignedTickets.length}</p>
             </div>
           </div>
         </div>
 
-        {/* Workspace Toolbar */}
-        <div className="flex items-center justify-between mt-6 pt-5 border-t border-slate-800/80 text-xs">
-          <div className="flex items-center space-x-2">
+        {/* Workspace Toolbar & Filter Pills */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mt-6 pt-5 border-t border-slate-800/80 text-xs">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setTechTab('QUEUE')}
-              className={`px-3.5 py-2 rounded-lg flex items-center gap-2 transition font-semibold ${
+              className={`px-3.5 py-2 rounded-xl flex items-center gap-2 transition font-semibold ${
                 techTab === 'QUEUE'
                   ? 'bg-emerald-600 text-white shadow'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
               }`}
             >
-              <LayoutDashboard className="h-4 w-4" /> Department Incident Queue ({techDepartmentTickets.length})
+              <LayoutDashboard className="h-4 w-4" /> Incident Workbench ({tickets.length})
             </button>
             <button
               onClick={() => setTechTab('CALL_STUDIO')}
-              className={`px-3.5 py-2 rounded-lg flex items-center gap-2 transition font-semibold ${
+              className={`px-3.5 py-2 rounded-xl flex items-center gap-2 transition font-semibold ${
                 techTab === 'CALL_STUDIO'
                   ? 'bg-emerald-600 text-white shadow'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
@@ -105,12 +120,68 @@ export function TechnicianWorkspace({ onReturnToLanding }: { onReturnToLanding: 
 
           <button
             onClick={onReturnToLanding}
-            className="text-slate-400 hover:text-white flex items-center gap-1.5 transition text-xs"
+            className="text-slate-400 hover:text-white flex items-center gap-1.5 transition text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-800"
           >
             <ArrowLeft className="h-3.5 w-3.5" /> Return to Central Portal
           </button>
         </div>
       </div>
+
+      {/* QUICK QUEUE FILTER CHIPS FOR TECHNICIAN */}
+      {techTab === 'QUEUE' && (
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900 border border-slate-800 p-3 rounded-xl">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-slate-400">Queue View:</span>
+            <button
+              onClick={() => setQueueFilter('ALL')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
+                queueFilter === 'ALL'
+                  ? 'bg-indigo-600 text-white shadow'
+                  : 'bg-slate-950 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              All Tickets ({tickets.length})
+            </button>
+            <button
+              onClick={() => setQueueFilter('UNASSIGNED')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition flex items-center gap-1 ${
+                queueFilter === 'UNASSIGNED'
+                  ? 'bg-blue-600 text-white shadow'
+                  : 'bg-slate-950 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Inbox className="h-3 w-3" /> Unassigned &bull; Claim Yourself ({unassignedTickets.length})
+            </button>
+            <button
+              onClick={() => setQueueFilter('MY_ASSIGNED')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition flex items-center gap-1 ${
+                queueFilter === 'MY_ASSIGNED'
+                  ? 'bg-amber-600 text-white shadow'
+                  : 'bg-slate-950 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Wrench className="h-3 w-3" /> Assigned to Me ({myActiveWork.length})
+            </button>
+            <button
+              onClick={() => setQueueFilter('RESOLVED')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition flex items-center gap-1 ${
+                queueFilter === 'RESOLVED'
+                  ? 'bg-emerald-600 text-white shadow'
+                  : 'bg-slate-950 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Check className="h-3 w-3" /> My Resolved ({myResolvedCount})
+            </button>
+          </div>
+
+          {unassignedTickets.length > 0 && (
+            <div className="text-xs text-blue-300 bg-blue-950/60 border border-blue-800/50 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-blue-400 animate-pulse"></span>
+              <span>{unassignedTickets.length} new incidents waiting to be claimed</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Workspace Views */}
       {techTab === 'QUEUE' && (
@@ -119,7 +190,7 @@ export function TechnicianWorkspace({ onReturnToLanding }: { onReturnToLanding: 
             <TicketList
               selectedTicketId={selectedTicketId || undefined}
               onSelectTicket={(id) => setSelectedTicketId(id)}
-              initialStatusFilter="ALL"
+              initialStatusFilter={queueFilter === 'RESOLVED' ? 'RESOLVED' : queueFilter === 'UNASSIGNED' ? 'NEW' : 'ALL'}
             />
           </div>
           <div className="lg:col-span-7">

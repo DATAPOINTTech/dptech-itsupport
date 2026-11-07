@@ -203,11 +203,30 @@ export function TicketList({
                 <div>
                   <h4 className="text-xs font-medium text-slate-100 line-clamp-1">{ticket.title}</h4>
                   <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">{ticket.description}</p>
+                  {ticket.resolutionReason && (
+                    <p className="text-[10px] text-emerald-300 bg-emerald-950/40 border border-emerald-800/30 px-1.5 py-0.5 rounded mt-1 line-clamp-1">
+                      ✓ Work Done: {ticket.resolutionReason}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-                  <span className="truncate max-w-[130px]">{ticket.requesterName}</span>
+                  <span className="truncate max-w-[140px] flex items-center gap-1">
+                    <span>{ticket.requesterName}</span>
+                    {ticket.requesterType && (
+                      <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-slate-800 text-slate-400">
+                        {ticket.requesterType}
+                      </span>
+                    )}
+                  </span>
                   <div className="flex items-center space-x-2">
+                    <span className="text-[10px]">
+                      {ticket.assignedTechName ? (
+                        <strong className="text-emerald-400">{ticket.assignedTechName.split(' ')[0]}</strong>
+                      ) : (
+                        <strong className="text-amber-400">Unassigned</strong>
+                      )}
+                    </span>
                     {getStatusBadge(ticket.status)}
                     <ChevronRight className="h-3 w-3 text-slate-600" />
                   </div>

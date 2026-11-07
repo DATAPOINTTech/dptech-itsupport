@@ -97,6 +97,7 @@ function MainDashboardApp() {
           <CentralLandingPortal 
             onOpenAuthModal={openAuthWithRole}
             onOpenRegisterModal={() => setIsRegisterModalOpen(true)}
+            onOpenCreateTicketModal={() => setIsCreateModalOpen(true)}
             onOpenWhatsAppStudio={() => {
               setPortalMode('PUBLIC_PORTAL');
             }}

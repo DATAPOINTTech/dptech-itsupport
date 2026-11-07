@@ -172,6 +172,7 @@ export interface Ticket {
   requesterName: string;
   requesterEmail: string;
   requesterPhone?: string;
+  requesterType?: 'STUDENT' | 'FACULTY' | 'STAFF' | 'DEPARTMENT';
   assignedTechId?: string;
   assignedTechName?: string;
   departmentId: string;
@@ -189,6 +190,7 @@ export interface Ticket {
   resolvedById?: string;
   resolvedByName?: string;
   resolvedAt?: string;
+  resolutionReason?: string;
   commentsCount: number;
   hasCallSession?: boolean;
 }

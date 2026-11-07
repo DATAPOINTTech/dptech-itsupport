@@ -83,6 +83,8 @@ interface AppContextType {
   createTicket: (ticket: Partial<Ticket>, initialComment?: string) => Ticket;
   updateTicketStatus: (ticketId: string, status: Ticket['status']) => void;
   assignTicket: (ticketId: string, techId: string, techName: string) => void;
+  resolveTicket: (ticketId: string, resolutionReason: string, techId?: string, techName?: string) => void;
+  simulateQuickScenario: (scenario: 'WHATSAPP_CALL' | 'WHATSAPP_CHAT' | 'EMAIL' | 'DEPARTMENT_REQUEST') => Ticket;
   addComment: (ticketId: string, content: string, isInternal: boolean) => void;
   
   // WhatsApp Call Sim
@@ -449,24 +451,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const created: Ticket = {
       id: newId,
       referenceId: newRef,
-      requesterId: currentUser.id,
-      requesterName: currentUser.fullName,
-      requesterEmail: currentUser.email,
-      requesterPhone: currentUser.phoneNumber,
+      requesterId: newTktData.requesterId || currentUser.id,
+      requesterName: newTktData.requesterName || currentUser.fullName,
+      requesterEmail: newTktData.requesterEmail || currentUser.email,
+      requesterPhone: newTktData.requesterPhone || currentUser.phoneNumber,
+      requesterType: newTktData.requesterType || 'STUDENT',
+      assignedTechId: newTktData.assignedTechId,
+      assignedTechName: newTktData.assignedTechName,
       departmentId: newTktData.departmentId || departments[0].id,
-      departmentName: departments.find(d => d.id === newTktData.departmentId)?.name || 'General Support',
+      departmentName: departments.find(d => d.id === newTktData.departmentId)?.name || 'Campus Wi-Fi & Core Network',
       channel: newTktData.channel || 'WEB_PORTAL',
-      title: newTktData.title || 'Untitled Issue',
+      title: newTktData.title || 'Untitled Incident',
       description: newTktData.description || '',
       priority: newTktData.priority || 'P3_MEDIUM',
-      status: 'NEW',
+      status: newTktData.status || 'NEW',
       isSecuritySensitive: !!newTktData.isSecuritySensitive,
       slaResolutionDue: new Date(Date.now() + 180 * 60 * 1000).toISOString(),
       slaBreached: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       commentsCount: initialComment ? 1 : 0,
-      hasCallSession: false,
+      hasCallSession: !!newTktData.hasCallSession,
     };
 
     setTickets(prev => [created, ...prev]);
@@ -475,9 +480,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const cmt: TicketComment = {
         id: `cmt-${Date.now()}`,
         ticketId: newId,
-        authorId: currentUser.id,
-        authorName: currentUser.fullName,
-        authorRole: currentUser.role,
+        authorId: created.requesterId,
+        authorName: created.requesterName,
+        authorRole: (created.requesterType as UserRole) || currentUser.role,
         isInternalNote: false,
         channelOrigin: created.channel,
         content: initialComment,
@@ -489,12 +494,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Append audit log
     const audit: AuditLog = {
       id: `aud-${Date.now()}`,
-      actorName: currentUser.fullName,
-      actorRole: currentUser.role,
+      actorName: created.requesterName,
+      actorRole: created.requesterType || currentUser.role,
       action: 'TICKET_CREATED',
       ticketRef: newRef,
       timestamp: new Date().toISOString(),
-      details: `Created via ${created.channel} - Priority: ${created.priority}`,
+      details: `Created by ${created.requesterName} (${created.requesterType}) via ${created.channel} - Priority: ${created.priority}`,
       ipAddress: '127.0.0.1'
     };
     setAuditLogs(prev => [audit, ...prev]);
@@ -539,12 +544,132 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           ...t,
           assignedTechId: techId,
           assignedTechName: techName,
-          status: t.status === 'NEW' ? 'TRIAGED' : t.status,
+          status: t.status === 'NEW' ? 'IN_PROGRESS' : t.status,
           updatedAt: new Date().toISOString(),
         };
       }
       return t;
     }));
+
+    const ticket = tickets.find(t => t.id === ticketId);
+    setAuditLogs(prev => [{
+      id: `aud-${Date.now()}`,
+      actorName: currentUser.fullName,
+      actorRole: currentUser.role,
+      action: 'TICKET_ASSIGNED',
+      ticketRef: ticket?.referenceId || ticketId,
+      timestamp: new Date().toISOString(),
+      details: `Assigned to technician ${techName} (${techId})`,
+      ipAddress: '127.0.0.1'
+    }, ...prev]);
+  };
+
+  const resolveTicket = (ticketId: string, resolutionReason: string, techId?: string, techName?: string) => {
+    const finalTechId = techId || currentUser.id;
+    const finalTechName = techName || currentUser.fullName;
+    const now = new Date().toISOString();
+
+    setTickets(prev => prev.map(t => {
+      if (t.id === ticketId) {
+        return {
+          ...t,
+          status: 'RESOLVED',
+          resolutionReason,
+          resolvedById: finalTechId,
+          resolvedByName: finalTechName,
+          resolvedAt: now,
+          updatedAt: now,
+        };
+      }
+      return t;
+    }));
+
+    // Post an official resolution comment on the ticket
+    const resComment: TicketComment = {
+      id: `cmt-res-${Date.now()}`,
+      ticketId,
+      authorId: finalTechId,
+      authorName: finalTechName,
+      authorRole: currentUser.role,
+      isInternalNote: false,
+      channelOrigin: 'WEB_PORTAL',
+      content: `[INCIDENT RESOLVED] Root Cause / Work Done: ${resolutionReason}`,
+      createdAt: now,
+    };
+    setComments(prev => ({
+      ...prev,
+      [ticketId]: [...(prev[ticketId] || []), resComment],
+    }));
+
+    // Append audit log
+    const ticket = tickets.find(t => t.id === ticketId);
+    setAuditLogs(prev => [{
+      id: `aud-${Date.now()}`,
+      actorName: finalTechName,
+      actorRole: currentUser.role,
+      action: 'TICKET_RESOLVED_WITH_REASON',
+      ticketRef: ticket?.referenceId || ticketId,
+      timestamp: now,
+      details: `Work completed by ${finalTechName}. Reason: ${resolutionReason}`,
+      ipAddress: '127.0.0.1'
+    }, ...prev]);
+  };
+
+  const simulateQuickScenario = (scenario: 'WHATSAPP_CALL' | 'WHATSAPP_CHAT' | 'EMAIL' | 'DEPARTMENT_REQUEST'): Ticket => {
+    let newTicketData: Partial<Ticket> = {};
+
+    if (scenario === 'WHATSAPP_CALL') {
+      newTicketData = {
+        requesterName: 'Dr. Arthur Pendelton',
+        requesterEmail: 'apendelton@faculty.campus.edu',
+        requesterPhone: '+1 (415) 555-9012',
+        requesterType: 'FACULTY',
+        channel: 'WHATSAPP_CALL',
+        title: 'WhatsApp Call: Main Auditorium Projector 4K Audio Failure',
+        description: 'Live voice call routed via WhatsApp Helpline: Audio and HDMI sync cuts out every 5 minutes in Chem Lecture Hall 1. Handled by Aisha AI.',
+        priority: 'P1_CRITICAL',
+        departmentId: departments[1]?.id || departments[0].id,
+        hasCallSession: true,
+      };
+    } else if (scenario === 'WHATSAPP_CHAT') {
+      newTicketData = {
+        requesterName: 'Sophia Martinez',
+        requesterEmail: 'smartinez@student.campus.edu',
+        requesterPhone: '+1 (415) 555-2381',
+        requesterType: 'STUDENT',
+        channel: 'WHATSAPP_CHAT',
+        title: 'WhatsApp Message: eduroam AP dropped near Library 3rd Floor Pods',
+        description: 'Student WhatsApp message: "eduroam disconnected on 3rd floor study rooms 301-310. SSIDs visible but DHCP handshake times out."',
+        priority: 'P2_HIGH',
+        departmentId: departments[0].id,
+      };
+    } else if (scenario === 'EMAIL') {
+      newTicketData = {
+        requesterName: 'David Jenkins (Registrar Staff)',
+        requesterEmail: 'djenkins@staff.campus.edu',
+        requesterPhone: '+1 (415) 555-4819',
+        requesterType: 'STAFF',
+        channel: 'EMAIL',
+        title: 'Inbound Email: High-volume transcript laser printer error 13.02',
+        description: 'Email sent to support@campus.edu: "Registrar office HP LaserJet is showing error 13.02 and out-of-toner warning. Need urgent service before afternoon graduation batch printing."',
+        priority: 'P3_MEDIUM',
+        departmentId: departments[2]?.id || departments[0].id,
+      };
+    } else {
+      newTicketData = {
+        requesterName: 'Computer Science Department Office',
+        requesterEmail: 'cs-office@campus.edu',
+        requesterPhone: '+1 (415) 555-7000',
+        requesterType: 'DEPARTMENT',
+        channel: 'WEB_PORTAL',
+        title: 'Department Request: CS Lab 204 VLAN Re-allocation & GPU Node Access',
+        description: 'Departmental request: Lab 204 workstations need switch port mapping and CUDA license tokens refreshed for upcoming Machine Learning lab class.',
+        priority: 'P2_HIGH',
+        departmentId: departments[0].id,
+      };
+    }
+
+    return createTicket(newTicketData, newTicketData.description);
   };
 
   const addComment = (ticketId: string, content: string, isInternal: boolean) => {
@@ -818,6 +943,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         createTicket,
         updateTicketStatus,
         assignTicket,
+        resolveTicket,
+        simulateQuickScenario,
         addComment,
         startWhatsAppCall,
         addParticipantToCall,
